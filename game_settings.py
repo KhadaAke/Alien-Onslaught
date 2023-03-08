@@ -34,7 +34,7 @@ class Settings:
 
         # Alien settings
         self.alien_direction = 1
-        self.max_alien_speed = 8.5
+        self.max_alien_speed = 4.0
         self.boss_hp = 50
         self.boss_points = 2500
         self.alien_points = 1
@@ -43,7 +43,7 @@ class Settings:
         self.powerup_speed = 1.5
 
         # How quickly the game speeds up
-        self.speedup_scale = 0.5
+        self.speedup_scale = 0.3
 
         self.score_scale = 4
         self.initialize_dynamic_settings()
@@ -68,11 +68,10 @@ class Settings:
         self.second_player_ship_speed = 3.5
         self.first_player_bullet_speed = 5.0
         self.second_player_bullet_speed = 5.0
-        self.alien_speed = 2
+        self.alien_speed = 1.2
         self.alien_bullet_speed = 1.5
         self.first_player_bullets_allowed = 1
         self.second_player_bullets_allowed = 1
-        self.fleet_drop_speed = 10
 
         # Scoring
         self.alien_points = 1
@@ -82,11 +81,9 @@ class Settings:
         if self.alien_speed < self.max_alien_speed:
             self.alien_speed += self.speedup_scale
             self.alien_bullet_speed += self.speedup_scale
-            self.fleet_drop_speed += self.speedup_scale
         self.alien_points = int(self.alien_points + self.score_scale)
-        if self.speedup_scale == 1.0:
+        if self.speedup_scale == 0.5:
             self.boss_hp = 75
-        elif self.speedup_scale == 1.5:
+        elif self.speedup_scale == 0.7:
             self.boss_hp = 100
-
 
