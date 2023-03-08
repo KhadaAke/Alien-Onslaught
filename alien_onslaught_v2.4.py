@@ -886,7 +886,7 @@ class AlienOnslaught:
             else:
                 if alien.check_edges():
                     alien.direction *= -1
-                    alien.rect.y += self.settings.fleet_drop_speed
+                    alien.rect.y += self.settings.alien_speed
                 else:
                     alien.rect.x += (self.settings.alien_speed *
                                     alien.direction)
@@ -952,13 +952,13 @@ class AlienOnslaught:
         hard_clicked = self.hard.rect.collidepoint(mouse_pos)
 
         if easy_clicked and not self.stats.game_active:
-            self.settings.speedup_scale = 0.5
+            self.settings.speedup_scale = 0.3
             self.show_difficulty = False
         if medium_clicked and not self.stats.game_active:
-            self.settings.speedup_scale = 1.0
+            self.settings.speedup_scale = 0.5
             self.show_difficulty = False
         if hard_clicked and not self.stats.game_active:
-            self.settings.speedup_scale = 1.5
+            self.settings.speedup_scale = 0.7
             self.show_difficulty = False
         if button_clicked and not self.stats.game_active:
             self.show_difficulty = False
@@ -1296,7 +1296,7 @@ class SingleplayerAlienOnslaught(AlienOnslaught):
             self.aliens.draw(self.screen)
             # Draw the score information.
             self.score_board.show_score()
-        # Draw the play button if the game is inactive.
+        # Draw the buttons if the game is inactive.
         if not self.stats.game_active:
             self.play_button.draw_button()
             self.quit_button.draw_button()
