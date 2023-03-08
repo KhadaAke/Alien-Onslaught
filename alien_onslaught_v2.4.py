@@ -344,6 +344,8 @@ class AlienOnslaught:
                             self.second_player_ship.image = self.second_player_ship.ship_images[4]
                         case pygame.K_3:
                             self.second_player_ship.image = self.second_player_ship.ship_images[5]
+                        case pygame.K_4:
+                            self.kill()
 
                 # No active players
             case _:
@@ -406,6 +408,11 @@ class AlienOnslaught:
                     self._update_screen()
                     break
 
+    def kill(self):
+        for alien in self.aliens.sprites():
+            alien.kill()
+            print(self.settings.boss_points)
+
 
     def _handle_level_tasks(self):
         """Handle behaviors for different levels."""
@@ -413,6 +420,11 @@ class AlienOnslaught:
             self._create_asteroids()
             self._update_asteroids()
             self._check_asteroids_collisions()
+
+        if self.stats.level == 15:
+            self.settings.boss_points = 5000
+        elif self.stats.level == 20:
+            self.settings.boss_points = 7000
 
         if self.stats.level in [10, 15, 20]:
             self._create_alien_bullets(1, 500, 500)
@@ -422,12 +434,12 @@ class AlienOnslaught:
 
     def _handle_background_change(self):
         """Change the background for different levels."""
-        if self.stats.level <= 1:
-            self.bg_img = self.reset_bg
-        elif self.stats.level == 6:
-            self.bg_img = self.second_bg
-        elif self.stats.level >= 12:
-            self.bg_img = self.third_bg
+        bg_images = {
+            1: self.reset_bg,
+            6: self.second_bg,
+            12: self.third_bg,
+        }
+        self.bg_img = bg_images.get(self.stats.level, self.bg_img)
 
 
     def _handle_alien_creation(self):
@@ -530,47 +542,11 @@ class AlienOnslaught:
 
         # First player collisions
         if self.stats.player_one_active and first_player_ship_collisions:
-            for aliens in first_player_ship_collisions.values():
-                for alien in aliens:
-                    alien.hit_count += 1
-                    if isinstance(alien, BossAlien):
-                        if alien.hit_count >= self.settings.boss_hp:
-                            self.aliens.remove(alien)
-                            self.stats.score += self.settings.boss_points
-                            self.score_board.prep_score()
-                            self.score_board.check_high_score()
-                    else:
-                        if self.stats.level < 5:
-                            if alien.hit_count >= 1:
-                                self._update_stats(alien, 'player_1')
-                        elif self.stats.level < 10:
-                            if alien.hit_count >= 2:
-                                self._update_stats(alien, 'player_1')
-                        else:
-                            if alien.hit_count >= 3:
-                                self._update_stats(alien, 'player_1')
+            self._handle_player_collisions(first_player_ship_collisions, 'player_1')
 
         # Second player collisions
         if self.stats.player_two_active and second_player_ship_collisions:
-            for aliens in second_player_ship_collisions.values():
-                for alien in aliens:
-                    alien.hit_count += 1
-                    if isinstance(alien, BossAlien):
-                        if alien.hit_count >= self.settings.boss_hp:
-                            self.aliens.remove(alien)
-                            self.second_stats.second_score += self.settings.boss_points
-                            self.score_board.prep_score()
-                            self.score_board.check_high_score()
-                    else:
-                        if self.stats.level < 5:
-                            if alien.hit_count >= 1:
-                                self._update_stats(alien, 'player_2')
-                        elif self.stats.level < 10:
-                            if alien.hit_count >= 2:
-                                self._update_stats(alien, 'player_2')
-                        else:
-                            if alien.hit_count >= 3:
-                                self._update_stats(alien, 'player_2')
+            self._handle_player_collisions(second_player_ship_collisions, 'player_2')
 
         # The player kills all aliens and finishes the level
         if not self.aliens:
@@ -583,6 +559,32 @@ class AlienOnslaught:
             self.settings.increase_speed()
             self.stats.level += 1
             self.score_board.prep_level()
+
+
+    def _handle_player_collisions(self, player_ship_collisions, player):
+        for aliens in player_ship_collisions.values():
+            for alien in aliens:
+                alien.hit_count += 1
+                if isinstance(alien, BossAlien):
+                    if alien.hit_count >= self.settings.boss_hp:
+                        self.aliens.remove(alien)
+                        if player == 'player_1':
+                            self.stats.score += self.settings.boss_points
+                        else:
+                            self.second_stats.second_score += self.settings.boss_points
+                        self.score_board.prep_score()
+                        self.score_board.check_high_score()
+                else:
+                    if self.stats.level < 5:
+                        if alien.hit_count >= 1:
+                            self._update_stats(alien, player)
+                    elif self.stats.level < 10:
+                        if alien.hit_count >= 2:
+                            self._update_stats(alien, player)
+                    else:
+                        if alien.hit_count >= 3:
+                            self._update_stats(alien, player)
+
 
 
     def _create_asteroid(self):
@@ -1183,26 +1185,9 @@ class SingleplayerAlienOnslaught(AlienOnslaught):
         first_player_ship_collisions = pygame.sprite.groupcollide(
             self.first_player_bullets, self.aliens, True, False)
 
-        if first_player_ship_collisions:
-            for aliens in first_player_ship_collisions.values():
-                for alien in aliens:
-                    alien.hit_count += 1
-                    if isinstance(alien, BossAlien):
-                        if alien.hit_count >= self.settings.boss_hp:
-                            self.aliens.remove(alien)
-                            self.stats.score += self.settings.boss_points
-                            self.score_board.prep_score()
-                            self.score_board.check_high_score()
-                    else:
-                        if self.stats.level < 5:
-                            if alien.hit_count >= 1:
-                                self._update_stats(alien, 'player_1')
-                        elif self.stats.level < 10:
-                            if alien.hit_count >= 2:
-                                self._update_stats(alien, 'player_1')
-                        else:
-                            if alien.hit_count >= 3:
-                                self._update_stats(alien, 'player_1')
+        # Player collisions
+        if self.stats.player_one_active and first_player_ship_collisions:
+            self._handle_player_collisions(first_player_ship_collisions, 'player_1')
 
         if not self.aliens:
             self._handle_alien_creation()
