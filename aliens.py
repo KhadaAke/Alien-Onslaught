@@ -68,7 +68,7 @@ class Alien(Sprite):
 
 
     def update(self):
-        """Move the alien right or left."""
+        """Update alien position on screen."""
         # Update current frame
         now = pygame.time.get_ticks()
         if now - self.last_update_time > self.animation_delay:
