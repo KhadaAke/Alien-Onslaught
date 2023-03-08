@@ -42,4 +42,6 @@
 * Implemented ship warp animation when the game starts.
 * Implemented boss fights: different bosses with different types of bullets.
 * Improved code readability, docstings, comments.
-						 
+
+### Version_2.4:
+* Alien movement changed, now the aliens are randomly moving left-right / up-down, not only from left to right.
