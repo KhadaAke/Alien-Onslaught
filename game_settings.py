@@ -30,7 +30,7 @@ class Settings:
         self.thunder_bullet_count = 1
 
         # Firebird settings
-        self.fire_bullet_count = 50
+        self.fire_bullet_count = 1
 
         # Alien settings
         self.alien_direction = 1
@@ -71,7 +71,7 @@ class Settings:
         self.alien_speed = 2
         self.alien_bullet_speed = 1.5
         self.first_player_bullets_allowed = 1
-        self.second_player_bullets_allowed = 100
+        self.second_player_bullets_allowed = 1
         self.fleet_drop_speed = 10
 
         # Scoring
