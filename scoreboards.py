@@ -19,14 +19,14 @@ class ScoreBoard:
         self.screen_rect = self.screen.get_rect()
         self.settings = ai_game.settings
         self.stats = ai_game.stats
-        self.second_stats = ai_game.second_stats
+        self.second_stats = ai_game.stats
 
-        #Font settings for scoring information.
+        # Font settings
         self.text_color = (255, 0, 0)
         self.level_color = (0, 0, 255)
         self.font = pygame.font.SysFont('', 27)
 
-        #Prepare the initial score images.
+        # Prepare the initial score images.
         self.prep_level()
         self.prep_score()
         self.prep_high_score()
@@ -60,14 +60,14 @@ class ScoreBoard:
         self.high_score_image = self.font.render(high_score_str, True,
             self.text_color, None)
 
-        #Center the high score at the top of the screen.
+        # Center the high score at the top of the screen.
         self.high_score_rect = self.high_score_image.get_rect()
         self.high_score_rect.centerx = self.level_rect.centerx
         self.high_score_rect.top = self.score_rect.top
 
 
     def check_high_score(self):
-        """Check to see if there's a new high score."""
+        """Check if there's a new high score."""
         if self.stats.score + self.second_stats.second_score > self.stats.high_score:
             self.stats.high_score = self.stats.score + self.second_stats.second_score
             self.prep_high_score()
@@ -87,16 +87,16 @@ class ScoreBoard:
 
 
     def prep_hp(self):
-        """Creates the health sprites"""
+        """Creates the health sprites for both players."""
         self.hearts = Group()
-        for heart_number in range(self.stats.ships_left):
+        for heart_number in range(self.stats.thunderbird_hp):
             heart = Heart(self.ai_game)
             heart.rect.x = 10 + heart_number * heart.rect.width
             heart.rect.y = 10
             self.hearts.add(heart)
 
         self.second_hearts = Group()
-        for second_heart_num in range(self.stats.player_two_hp):
+        for second_heart_num in range(self.stats.phoenix_hp):
             second_heart = Heart(self.ai_game)
             second_heart.rect.x = (
                 self.settings.screen_width -
@@ -105,7 +105,7 @@ class ScoreBoard:
             self.second_hearts.add(second_heart)
 
     def show_score(self):
-        """Draw scores, level, health and ships to the screen."""
+        """Draw scores, level and health to the screen."""
         self.screen.blit(self.score_image, self.score_rect)
         self.screen.blit(self.second_score_image, self.second_score_rect)
         self.screen.blit(self.high_score_image, self.high_score_rect)
@@ -148,7 +148,7 @@ class SecondScoreBoard(ScoreBoard):
             self.prep_high_score()
 
     def show_score(self):
-        """Draw scores, level and ships to the screen."""
+        """Draw scores, level and health to the screen."""
         self.screen.blit(self.score_image, self.score_rect)
         self.screen.blit(self.high_score_image, self.high_score_rect)
         self.screen.blit(self.level_image, self.level_rect)
