@@ -24,7 +24,6 @@ from power_ups import PowerUp, HealthPowerUp
 from asteroid import Asteroid
 
 
-
 class AlienOnslaught:
     """Overall class to manage game assets and behavoir for the multiplayer version."""
     def __init__(self):
@@ -38,17 +37,12 @@ class AlienOnslaught:
         self.bg_img = pygame.transform.smoothscale(self.settings.bg_img, self.screen.get_size())
         self.bg_img_rect = self.bg_img.get_rect()
         self.reset_bg = pygame.transform.smoothscale(self.settings.bg_img, self.screen.get_size())
-        self.second_bg = self.settings.second_bg
-        self.third_bg = self.settings.third_bg
-        self.fire_sound = self.settings.fire_sound
         self.last_power_up_time = 0
         self.last_alien_bullet_time = 0
         self.last_asteroid_time = 0
         self.button_names = ["play_button", "quit_button", "menu_button",
                             'difficulty', 'easy', 'medium', 'hard']
         self.button_images = self._load_button_images(self.button_names)
-        self.game_over = self.settings.game_over
-        self.pause_img = self.settings.pause
         self.paused = False
         self.show_difficulty = False
         self.resizable = True
@@ -61,7 +55,10 @@ class AlienOnslaught:
         self._initialize_menu_buttons()
 
         pygame.display.set_caption("Alien Onslaught")
-
+        if not self.thunderbird_ship.alive:
+            print('asd')
+        elif not self.phoenix_ship.alive:
+            print('asda')
 
     def _initialize_start_menu(self):
         """Initializes variables for the start menu"""
@@ -164,14 +161,13 @@ class AlienOnslaught:
 
     def _initialize_game_objects(self):
         """Initialize game objects"""
-        self.first_player_ship = Thunderbird(self, 352, 612)
-        self.second_player_ship = Phoenix(self, 852, 612)
-        self.ships = [self.first_player_ship, self.second_player_ship]
-        self.stats = GameStats(self)
-        self.second_stats = GameStats(self)
+        self.thunderbird_ship = Thunderbird(self, 352, 612)
+        self.phoenix_ship = Phoenix(self, 852, 612)
+        self.thunderbird_bullets = pygame.sprite.Group()
+        self.phoenix_bullets = pygame.sprite.Group()
+        self.ships = [self.thunderbird_ship, self.phoenix_ship]
+        self.stats = GameStats(self, self.phoenix_ship, self.thunderbird_ship)
         self.score_board = ScoreBoard(self)
-        self.first_player_bullets = pygame.sprite.Group()
-        self.second_player_bullets = pygame.sprite.Group()
         self.alien_bullet = pygame.sprite.Group()
         self.power_ups = pygame.sprite.Group()
         self.aliens = pygame.sprite.Group()
@@ -221,8 +217,8 @@ class AlienOnslaught:
                     self._check_power_ups_collisions()
                     self._update_bullets()
                     self._update_aliens()
-                    self.first_player_ship.update_state()
-                    self.second_player_ship.update_state()
+                    self.thunderbird_ship.update_state()
+                    self.phoenix_ship.update_state()
                     self._shield_collisions(self.ships, self.aliens,
                                              self.alien_bullet, self.asteroids)
 
@@ -246,34 +242,37 @@ class AlienOnslaught:
                 mouse_pos = pygame.mouse.get_pos()
                 self._check_buttons(mouse_pos)
             elif event.type == pygame.VIDEORESIZE:
-                self.screen = pygame.display.set_mode(event.size, pygame.RESIZABLE)
-                self.settings.screen_width = self.screen.get_rect().width
-                self.settings.screen_height = self.screen.get_rect().height
-                self.bg_img = pygame.transform.smoothscale(self.settings.bg_img,
-                                                            self.screen.get_size())
-                self.second_bg = pygame.transform.smoothscale(self.settings.second_bg,
-                                                                   self.screen.get_size())
-                self.third_bg = pygame.transform.smoothscale(self.settings.third_bg,
-                                                                    self.screen.get_size())
-                self.reset_bg = pygame.transform.smoothscale(self.settings.bg_img,
-                                                                  self.screen.get_size())
-                self.play_button.update_pos(self.screen.get_rect().center)
-                self.difficulty.update_pos(self.play_button.rect.centerx - 74,
-                                            self.play_button.rect.bottom)
-                self.menu_button.update_pos(self.difficulty.rect.centerx - 74,
-                                            self.difficulty.rect.bottom)
-                self.quit_button.update_pos(self.menu_button.rect.centerx - 74,
-                                                self.menu_button.rect.bottom)
-                self.easy.update_pos(self.difficulty.rect.right - 10, self.difficulty.rect.y)
-                self.medium.update_pos(self.easy.rect.right - 5, self.difficulty.rect.y)
-                self.hard.update_pos(self.medium.rect.right - 5, self.difficulty.rect.y)
-                self.score_board.prep_level()
-                self.score_board.prep_score()
-                self.score_board.prep_high_score()
-                self.score_board.prep_hp()
-                self._initialize_game_over()
-                self.first_player_ship.screen_rect = self.screen.get_rect()
-                self.second_player_ship.screen_rect = self.screen.get_rect()
+                self._resize_screen(event.size)
+
+    def _resize_screen(self, size):
+        """Resize the game screen and update relevant game objects."""
+        self.screen = pygame.display.set_mode(size, pygame.RESIZABLE)
+        self.settings.screen_width = self.screen.get_rect().width
+        self.settings.screen_height = self.screen.get_rect().height
+        self.bg_img = pygame.transform.smoothscale(self.settings.bg_img, self.screen.get_size())
+        self.settings.second_bg = pygame.transform.smoothscale(self.settings.second_bg,
+                                                                self.screen.get_size())
+        self.settings.third_bg = pygame.transform.smoothscale(self.settings.third_bg,
+                                                               self.screen.get_size())
+        self.reset_bg = pygame.transform.smoothscale(self.settings.bg_img,
+                                                      self.screen.get_size())
+        self.play_button.update_pos(self.screen.get_rect().center)
+        self.difficulty.update_pos(self.play_button.rect.centerx - 74,
+                                    self.play_button.rect.bottom)
+        self.menu_button.update_pos(self.difficulty.rect.centerx - 74,
+                                     self.difficulty.rect.bottom)
+        self.quit_button.update_pos(self.menu_button.rect.centerx - 74,
+                                     self.menu_button.rect.bottom)
+        self.easy.update_pos(self.difficulty.rect.right - 10, self.difficulty.rect.y)
+        self.medium.update_pos(self.easy.rect.right - 5, self.difficulty.rect.y)
+        self.hard.update_pos(self.medium.rect.right - 5, self.difficulty.rect.y)
+        self.score_board.prep_level()
+        self.score_board.prep_score()
+        self.score_board.prep_high_score()
+        self.score_board.prep_hp()
+        self._initialize_game_over()
+        self.thunderbird_ship.screen_rect = self.screen.get_rect()
+        self.phoenix_ship.screen_rect = self.screen.get_rect()
 
 
     def _check_keydown_events(self, event):
@@ -293,114 +292,112 @@ class AlienOnslaught:
 
             # If the game is not paused, check for player keypresses
             case _ if not self.paused:
-                # Player 1 controls
-                if self.stats.player_one_active and not self.first_player_ship.is_warping:
+                # Thunderbird controls
+                if self.thunderbird_ship.alive and not self.thunderbird_ship.is_warping:
                     match event.key:
                         case pygame.K_RIGHT:
-                            self.first_player_ship.moving_right = True
+                            self.thunderbird_ship.moving_right = True
                         case pygame.K_LEFT:
-                            self.first_player_ship.moving_left = True
+                            self.thunderbird_ship.moving_left = True
                         case pygame.K_UP:
-                            self.first_player_ship.moving_up = True
+                            self.thunderbird_ship.moving_up = True
                         case pygame.K_DOWN:
-                            self.first_player_ship.moving_down = True
+                            self.thunderbird_ship.moving_down = True
                         case pygame.K_RETURN:
                             self._fire_bullet(
-                                self.first_player_bullets,
-                                self.settings.first_player_bullets_allowed,
+                                self.thunderbird_bullets,
+                                self.settings.thunderbird_bullets_allowed,
                                 bullet_class=Thunderbolt,
-                                num_bullets=self.settings.thunder_bullet_count,
-                                ship=self.first_player_ship)
-                            self.fire_sound.play()
+                                num_bullets=self.settings.thunderbird_bullet_count,
+                                ship=self.thunderbird_ship)
+                            self.settings.fire_sound.play()
                         case pygame.K_KP1:
-                            self.first_player_ship.image = self.first_player_ship.ship_images[0]
+                            self.thunderbird_ship.image = self.thunderbird_ship.ship_images[0]
                         case pygame.K_KP2:
-                            self.first_player_ship.image = self.first_player_ship.ship_images[1]
+                            self.thunderbird_ship.image = self.thunderbird_ship.ship_images[1]
                         case pygame.K_KP3:
-                            self.first_player_ship.image = self.first_player_ship.ship_images[2]
+                            self.thunderbird_ship.image = self.thunderbird_ship.ship_images[2]
 
-                # Player 2 controls
-                if self.stats.player_two_active and not self.second_player_ship.is_warping:
+                # Phoenix controls
+                if self.phoenix_ship.alive and not self.phoenix_ship.is_warping:
                     match event.key:
                         case pygame.K_SPACE:
                             self._fire_bullet(
-                                self.second_player_bullets,
-                                self.settings.second_player_bullets_allowed,
+                                self.phoenix_bullets,
+                                self.settings.phoenix_bullets_allowed,
                                 bullet_class=Firebird,
-                                num_bullets=self.settings.fire_bullet_count,
-                                ship=self.second_player_ship)
-                            self.fire_sound.play()
+                                num_bullets=self.settings.phoenix_bullet_count,
+                                ship=self.phoenix_ship)
+                            self.settings.fire_sound.play()
                         case pygame.K_a:
-                            self.second_player_ship.moving_left = True
+                            self.phoenix_ship.moving_left = True
                         case pygame.K_d:
-                            self.second_player_ship.moving_right = True
+                            self.phoenix_ship.moving_right = True
                         case pygame.K_w:
-                            self.second_player_ship.moving_up = True
+                            self.phoenix_ship.moving_up = True
                         case pygame.K_s:
-                            self.second_player_ship.moving_down = True
+                            self.phoenix_ship.moving_down = True
                         case pygame.K_1:
-                            self.second_player_ship.image = self.second_player_ship.ship_images[3]
+                            self.phoenix_ship.image = self.phoenix_ship.ship_images[3]
                         case pygame.K_2:
-                            self.second_player_ship.image = self.second_player_ship.ship_images[4]
+                            self.phoenix_ship.image = self.phoenix_ship.ship_images[4]
                         case pygame.K_3:
-                            self.second_player_ship.image = self.second_player_ship.ship_images[5]
-                        case pygame.K_4:
-                            self.kill()
+                            self.phoenix_ship.image = self.phoenix_ship.ship_images[5]
 
                 # No active players
             case _:
-                self.first_player_ship.moving_right = False
-                self.first_player_ship.moving_left = False
-                self.first_player_ship.moving_up = False
-                self.first_player_ship.moving_down = False
-                self.second_player_ship.moving_right = False
-                self.second_player_ship.moving_left = False
-                self.second_player_ship.moving_up = False
-                self.second_player_ship.moving_down = False
+                self.thunderbird_ship.moving_right = False
+                self.thunderbird_ship.moving_left = False
+                self.thunderbird_ship.moving_up = False
+                self.thunderbird_ship.moving_down = False
+                self.phoenix_ship.moving_right = False
+                self.phoenix_ship.moving_left = False
+                self.phoenix_ship.moving_up = False
+                self.phoenix_ship.moving_down = False
 
 
     def _check_keyup_events(self, event):
         """Respond to keys being released."""
-        # Player 1 controls
-        if self.stats.player_one_active:
+        # Thunderbird controls
+        if self.thunderbird_ship.alive:
             match event.key:
-                # Player 1 controls
+                # Thunderbird controls
                 case pygame.K_RIGHT:
-                    self.first_player_ship.moving_right = False
+                    self.thunderbird_ship.moving_right = False
                 case pygame.K_LEFT:
-                    self.first_player_ship.moving_left = False
+                    self.thunderbird_ship.moving_left = False
                 case pygame.K_UP:
-                    self.first_player_ship.moving_up = False
+                    self.thunderbird_ship.moving_up = False
                 case pygame.K_DOWN:
-                    self.first_player_ship.moving_down = False
+                    self.thunderbird_ship.moving_down = False
 
-            # Player 2 controls
-        if self.stats.player_two_active:
+            # Phoenix controls
+        if self.phoenix_ship.alive:
             match event.key:
                 case pygame.K_d:
-                    self.second_player_ship.moving_right = False
+                    self.phoenix_ship.moving_right = False
                 case pygame.K_a:
-                    self.second_player_ship.moving_left = False
+                    self.phoenix_ship.moving_left = False
                 case pygame.K_w:
-                    self.second_player_ship.moving_up = False
+                    self.phoenix_ship.moving_up = False
                 case pygame.K_s:
-                    self.second_player_ship.moving_down = False
+                    self.phoenix_ship.moving_down = False
 
-        if not self.stats.player_one_active and not self.stats.player_two_active:
-            self.first_player_ship.moving_right = False
-            self.first_player_ship.moving_left = False
-            self.first_player_ship.moving_up = False
-            self.first_player_ship.moving_down = False
-            self.second_player_ship.moving_right = False
-            self.second_player_ship.moving_left = False
-            self.second_player_ship.moving_up = False
-            self.second_player_ship.moving_down = False
+        if not self.thunderbird_ship.alive and not self.phoenix_ship.alive:
+            self.thunderbird_ship.moving_right = False
+            self.thunderbird_ship.moving_left = False
+            self.thunderbird_ship.moving_up = False
+            self.thunderbird_ship.moving_down = False
+            self.phoenix_ship.moving_right = False
+            self.phoenix_ship.moving_left = False
+            self.phoenix_ship.moving_up = False
+            self.phoenix_ship.moving_down = False
 
 
     def _check_for_pause(self):
         """Check if the game is paused."""
         if self.paused:
-            self.screen.blit(self.pause_img, (300, 150))
+            self.screen.blit(self.settings.pause, (300, 150))
             pygame.display.flip()
             while self.paused:
                 self.check_events()
@@ -408,26 +405,23 @@ class AlienOnslaught:
                     self._update_screen()
                     break
 
-    def kill(self):
-        for alien in self.aliens.sprites():
-            alien.kill()
-            print(self.settings.boss_points)
-
 
     def _handle_level_tasks(self):
         """Handle behaviors for different levels."""
+        # start creating asteroids when level is 7 or more
         if self.stats.level >= 7:
             self._create_asteroids()
             self._update_asteroids()
             self._check_asteroids_collisions()
-
+        # increase points for different bosses
         if self.stats.level == 15:
             self.settings.boss_points = 5000
         elif self.stats.level == 20:
             self.settings.boss_points = 7000
-
+        # bullets for boss fights
         if self.stats.level in [10, 15, 20]:
             self._create_alien_bullets(1, 500, 500)
+        # bullets for the normal game
         else:
             self._create_alien_bullets(4, 4500, 7000)
 
@@ -436,22 +430,26 @@ class AlienOnslaught:
         """Change the background for different levels."""
         bg_images = {
             1: self.reset_bg,
-            6: self.second_bg,
-            12: self.third_bg,
+            6: self.settings.second_bg,
+            12: self.settings.third_bg,
         }
         self.bg_img = bg_images.get(self.stats.level, self.bg_img)
 
 
     def _handle_alien_creation(self):
         """Choose what aliens to create"""
+        # boss fights
         if self.stats.level in [9, 14, 19]:
             self._create_boss_alien()
+        # normal game
         else:
             self._create_fleet()
 
 
     def _check_for_resize(self):
         """Choose when the window is resizable."""
+        # the game window is resizable before clicking the Play button
+        # players can't resize the window while the game is active.
         info = pygame.display.Info()
         if not self.stats.game_active and not self.resizable:
             pygame.display.set_mode((info.current_w, info.current_h), pygame.RESIZABLE)
@@ -463,6 +461,7 @@ class AlienOnslaught:
 
     def _fire_bullet(self, bullets, bullets_allowed, bullet_class, num_bullets, ship):
         """Create new player bullets."""
+        # Create the bullets at and position them correctly as the number of bullets increases
         if len(bullets) < bullets_allowed:
             if ship.bullet_power:
                 for i in range(num_bullets):
@@ -482,18 +481,18 @@ class AlienOnslaught:
 
     def _update_bullets(self):
         """Update position of bullets and get rid of bullets that went of screen."""
-        self.first_player_bullets.update()
-        self.second_player_bullets.update()
+        self.thunderbird_bullets.update()
+        self.phoenix_bullets.update()
 
         # Get rid of bullets that went off screen.
-        for bullet in self.first_player_bullets.copy():
+        for bullet in self.thunderbird_bullets.copy():
             if bullet.rect.bottom <= 0:
-                self.first_player_bullets.remove(bullet)
+                self.thunderbird_bullets.remove(bullet)
 
-        for bullet in self.second_player_bullets.copy():
+        for bullet in self.phoenix_bullets.copy():
             if bullet.rect.bottom <= 0:
-                self.second_player_bullets.remove(bullet)
-
+                self.phoenix_bullets.remove(bullet)
+        # check for collisions between aliens and bullets
         self._check_bullet_alien_collisions()
 
 
@@ -501,7 +500,7 @@ class AlienOnslaught:
         """Update asteroids and remove asteroids that went off screen."""
         self.asteroids.update()
         for asteroid in self.asteroids.copy():
-            if asteroid.rect.bottom <=0:
+            if asteroid.rect.bottom <= 0:
                 self.asteroids.remove(asteroid)
 
 
@@ -509,7 +508,7 @@ class AlienOnslaught:
         """Update power-ups and remove power ups that went off screen."""
         self.power_ups.update()
         for power in self.power_ups.copy():
-            if power.rect.bottom <=0:
+            if power.rect.bottom <= 0:
                 self.power_ups.remove(power)
 
 
@@ -523,11 +522,14 @@ class AlienOnslaught:
 
     def _update_stats(self, alien, player):
         """Update player score and remove alien"""
+        # when collision happen, update the stats and remove the alien that
+        # collided with the bullet
+        # method used in _handle_player_collisions
         match player:
-            case 'player_1':
+            case 'thunderbird':
                 self.stats.score += self.settings.alien_points
-            case 'player_2':
-                self.second_stats.second_score += self.settings.alien_points
+            case 'phoenix':
+                self.stats.second_score += self.settings.alien_points
         self.aliens.remove(alien)
         self.score_board.prep_score()
         self.score_board.check_high_score()
@@ -535,24 +537,24 @@ class AlienOnslaught:
 
     def _check_bullet_alien_collisions(self):
         """Respond to bullet-alien collisions."""
-        first_player_ship_collisions = pygame.sprite.groupcollide(
-            self.first_player_bullets, self.aliens, True, False)
-        second_player_ship_collisions = pygame.sprite.groupcollide(
-            self.second_player_bullets, self.aliens, True, False)
+        thunderbird_ship_collisions = pygame.sprite.groupcollide(
+            self.thunderbird_bullets, self.aliens, True, False)
+        phoenix_ship_collisions = pygame.sprite.groupcollide(
+            self.phoenix_bullets, self.aliens, True, False)
 
-        # First player collisions
-        if self.stats.player_one_active and first_player_ship_collisions:
-            self._handle_player_collisions(first_player_ship_collisions, 'player_1')
+        # Thunderbird collisions
+        if self.thunderbird_ship.alive and thunderbird_ship_collisions:
+            self._handle_player_collisions(thunderbird_ship_collisions, 'thunderbird')
 
-        # Second player collisions
-        if self.stats.player_two_active and second_player_ship_collisions:
-            self._handle_player_collisions(second_player_ship_collisions, 'player_2')
+        # Phoenix collisions
+        if self.phoenix_ship.alive and phoenix_ship_collisions:
+            self._handle_player_collisions(phoenix_ship_collisions, 'phoenix')
 
         # The player kills all aliens and finishes the level
         if not self.aliens:
             self._handle_alien_creation()
-            self.first_player_bullets.empty()
-            self.second_player_bullets.empty()
+            self.thunderbird_bullets.empty()
+            self.phoenix_bullets.empty()
             self.power_ups.empty()
             self.alien_bullet.empty()
             self.asteroids.empty()
@@ -568,10 +570,10 @@ class AlienOnslaught:
                 if isinstance(alien, BossAlien):
                     if alien.hit_count >= self.settings.boss_hp:
                         self.aliens.remove(alien)
-                        if player == 'player_1':
+                        if player == 'thunderbird':
                             self.stats.score += self.settings.boss_points
                         else:
-                            self.second_stats.second_score += self.settings.boss_points
+                            self.stats.second_score += self.settings.boss_points
                         self.score_board.prep_score()
                         self.score_board.check_high_score()
                 else:
@@ -586,24 +588,24 @@ class AlienOnslaught:
                             self._update_stats(alien, player)
 
 
-
-    def _create_asteroid(self):
-        """Create an asteroid at a random location and add it to the asteroids group"""
-        asteroid = Asteroid(self)
-        asteroid.rect.x = random.randint(0, self.settings.screen_width - asteroid.rect.width)
-        asteroid.rect.y = random.randint(-100, -40)
-        self.asteroids.add(asteroid)
-
-
     def _create_power_ups(self):
         """Create multiple power ups after a certain time has passed"""
         if self.last_power_up_time == 0:
             self.last_power_up_time = pygame.time.get_ticks()
 
         current_time = pygame.time.get_ticks()
-        if current_time - self.last_power_up_time >= random.randint(15000, 45000):
+        # change the range to determine how often power ups are created
+        if current_time - self.last_power_up_time >= random.randint(15000, 45000): # miliseconds
             self.last_power_up_time = current_time
-            self._create_power_up()
+            # change the range to determine the chance for a power up to be health power up
+            if random.randint(0, 4) == 0:
+                power_up = HealthPowerUp(self)
+            else:
+                power_up = PowerUp(self)
+            # create power up at a random location, at the top of the screen.
+            power_up.rect.x = random.randint(0, self.settings.screen_width - power_up.rect.width)
+            power_up.rect.y = random.randint(-100, -40)
+            self.power_ups.add(power_up)
 
 
     def _create_asteroids(self):
@@ -612,53 +614,68 @@ class AlienOnslaught:
             self.last_asteroid_time = pygame.time.get_ticks()
 
         current_time = pygame.time.get_ticks()
-        if current_time - self.last_asteroid_time >= random.randint(4000, 10000):
+        # change the range to determine how often asteroids are created.
+        if current_time - self.last_asteroid_time >= random.randint(4000, 10000): # miliseconds
             self.last_asteroid_time = current_time
-            self._create_asteroid()
+            # create asteroid at a random location, at the top of the screen.
+            asteroid = Asteroid(self)
+            asteroid.rect.x = random.randint(0, self.settings.screen_width - asteroid.rect.width)
+            asteroid.rect.y = random.randint(-100, -40)
+            self.asteroids.add(asteroid)
 
 
     def _check_power_ups_collisions(self):
-        """Check for collision between ship and a power-up"""
-        first_player_collision = pygame.sprite.spritecollideany(self.first_player_ship,
-                                                                 self.power_ups)
-        second_player_collision = pygame.sprite.spritecollideany(self.second_player_ship,
-                                                                 self.power_ups)
-
-        # First player collisions
-        if self.stats.player_one_active and first_player_collision:
-            if isinstance(first_player_collision, PowerUp):
-                self._first_ship_power_up()
-            elif isinstance(first_player_collision, HealthPowerUp):
-                self._first_health_power_up()
-            first_player_collision.kill()
-
-        # Second player collisions
-        if self.stats.player_two_active and second_player_collision:
-            if isinstance(second_player_collision, PowerUp):
-                self._second_ship_power_up()
-            elif isinstance(second_player_collision, HealthPowerUp):
-                self._second_health_power_up()
-            second_player_collision.kill()
+        """Check for collision between ships and power-ups
+        If a collision occurs, a random power up is activated for the coresponding player
+        and the power up is removed.
+        """
+        # Define a dict that maps each player to their corresponding ship, active status, and power-up functions
+        player_info = {
+            "thunderbird": {
+                "ship": self.thunderbird_ship,
+                "active": self.thunderbird_ship.alive,
+                "power_up": self._power_up_player,
+                "health_power_up": self._health_power_up,
+            },
+            "phoenix": {
+                "ship": self.phoenix_ship,
+                "active": self.phoenix_ship.alive,
+                "power_up": self._power_up_player,
+                "health_power_up": self._health_power_up,
+            },
+        }
+        # loop through each player and check for collisions
+        for player, info in player_info.items():
+            collision = pygame.sprite.spritecollideany(info["ship"], self.power_ups)
+            if info["active"] and collision:
+                # check the type of the power up and activate the func
+                if isinstance(collision, PowerUp):
+                    info["power_up"](player)
+                elif isinstance(collision, HealthPowerUp):
+                    info["health_power_up"](player)
+                collision.kill()
 
 
     def _check_asteroids_collisions(self):
-        """Check for collisions betweeen the ships and asteroids"""
-        first_player_collision = pygame.sprite.spritecollideany(self.first_player_ship,
-                                                                 self.asteroids)
-        second_player_collision = pygame.sprite.spritecollideany(self.second_player_ship,
-                                                                  self.asteroids)
-
-        if self.stats.player_one_active and first_player_collision:
-            self._first_player_ship_hit()
-            first_player_collision.kill()
-
-        if self.stats.player_two_active and second_player_collision:
-            self._second_player_ship_hit()
-            second_player_collision.kill()
+        """Check for collisions between the ships and asteroids"""
+        # loop through each player and check if it's alive,
+        # then check for collisions with asteroids and which player collided
+        # and activate the corresponding method
+        for ship in self.ships:
+            if ship.alive:
+                collision = pygame.sprite.spritecollideany(ship, self.asteroids)
+                if collision:
+                    if ship is self.thunderbird_ship:
+                        self._thunderbird_ship_hit()
+                    else:
+                        self._phoenix_ship_hit()
+                    collision.kill()
 
 
     def _shield_collisions(self, ships, aliens, bullets, asteroids):
         """Destroy any aliens that collide with the shield of any of the given ships."""
+        # Loop through each player and check if the shield is on, if it is, kill the
+        # alien, alien bullet or asteroid that collided with it and turn the shield off.
         for ship in ships:
             for alien in aliens:
                 if ship.shield_on and ship.shield_rect.colliderect(alien.rect):
@@ -674,110 +691,109 @@ class AlienOnslaught:
                     ship.shield_on = False
 
 
-    def _first_ship_power_up(self):
-        """Powers up the first player ship"""
-        power_up_choice = random.randint(1, 5)
-        if power_up_choice == 1:
-            self.settings.first_player_ship_speed += 0.3
-        elif power_up_choice == 2:
-            self.settings.first_player_bullet_speed += 0.3
-        elif power_up_choice == 3 and self.settings.thunder_bullet_count < 6:
-            self.settings.thunder_bullet_count += 1
-        elif power_up_choice == 4:
-            self.first_player_ship.draw_shield()
-        elif power_up_choice == 5:
-            self.settings.first_player_bullets_allowed += 2
+    def _power_up_player(self, player):
+        """Powers up the specified player"""
+        # each lambda function performs a different power up on the player.
+        power_up_choices = [
+            lambda: setattr(self.settings, f"{player}_ship_speed",
+                             getattr(self.settings, f"{player}_ship_speed") + 0.3),
+            lambda: setattr(self.settings, f"{player}_bullet_speed",
+                             getattr(self.settings, f"{player}_bullet_speed") + 0.3),
+            lambda: setattr(self.settings, f"{player}_bullets_allowed",
+                             getattr(self.settings, f"{player}_bullets_allowed") + 2),
+            lambda: setattr(self.settings, f"{player}_bullet_count",
+                             getattr(self.settings, f"{player}_bullet_count") + 1),
+            lambda: getattr(self, f"{player}_ship").draw_shield(),
+        ]
+        # randomly select one of the power ups and activate it.
+        power_up_choice = random.choice(power_up_choices)
+        power_up_choice()
 
 
-    def _second_ship_power_up(self):
-        """Powers up the second player ship"""
-        power_up_choice = random.randint(1, 5)
-        if power_up_choice == 1 and self.settings.fire_bullet_count < 6:
-            self.settings.fire_bullet_count += 1
-        if power_up_choice == 2:
-            self.settings.second_player_ship_speed += 0.3
-            self.second_player_ship.draw_shield()
-        elif power_up_choice == 3:
-            self.settings.second_player_bullet_speed += 0.3
-        elif power_up_choice == 4:
-            self.second_player_ship.draw_shield()
-        elif power_up_choice == 5:
-            self.settings.second_player_bullets_allowed += 2
+    def _health_power_up(self, player):
+        """Increases the health of the specified player"""
+        player_health_attr = {
+            "thunderbird": "thunderbird_hp",
+            "phoenix": "phoenix_hp",
+        }
+        if getattr(self.stats, player_health_attr[player]) < self.settings.max_hp:
+            setattr(self.stats, player_health_attr[player],
+                     getattr(self.stats, player_health_attr[player]) + 1)
+        self.score_board.prep_hp()
 
-
-    def _first_health_power_up(self):
-        """Increases the health of the first player"""
-        if self.stats.ships_left < self.settings.max_ships:
-            self.stats.ships_left += 1
-            self.score_board.prep_hp()
-
-
-    def _second_health_power_up(self):
-        """Increases the health of the second player"""
-        if self.stats.player_two_hp < self.settings.max_ships:
-            self.stats.player_two_hp += 1
-            self.score_board.prep_hp()
 
 
     def _check_alien_bullets_collisions(self):
         """Manages collisions between the alien bullets and the players"""
-        first_player_collision = pygame.sprite.spritecollideany(self.first_player_ship,
+        # check for collisions between each player and alien bullet and if a collision
+        # occurrs, call the appropriate method and kill the collision.
+        thunderbird_collision = pygame.sprite.spritecollideany(self.thunderbird_ship,
                                                                  self.alien_bullet)
-        second_player_collision = pygame.sprite.spritecollideany(self.second_player_ship,
+        phoenix_collision = pygame.sprite.spritecollideany(self.phoenix_ship,
                                                                   self.alien_bullet)
 
-        if self.stats.player_one_active and first_player_collision:
-            self._first_player_ship_hit()
-            first_player_collision.kill()
+        if self.thunderbird_ship.alive and thunderbird_collision:
+            self._thunderbird_ship_hit()
+            thunderbird_collision.kill()
 
-        if self.stats.player_two_active and second_player_collision:
-            self._second_player_ship_hit()
-            second_player_collision.kill()
+        if self.phoenix_ship.alive and phoenix_collision:
+            self._phoenix_ship_hit()
+            phoenix_collision.kill()
 
 
-    def _first_player_ship_hit(self):
-        """Respond to the first player ship being hit by an alien, bullet or asteroid."""
-        if self.first_player_ship.exploding:
+    def _thunderbird_ship_hit(self):
+        """Respond to the Thunderbird ship being hit by an alien, bullet or asteroid."""
+        if self.thunderbird_ship.exploding:
             return
 
-        if self.stats.ships_left > 0:
-            self.first_player_ship.explode()
-            self.first_player_ship.shield_on = False
-            self.settings.thunder_bullet_count = 1
-            if self.settings.first_player_bullets_allowed > 1:
-                self.settings.first_player_bullets_allowed -= 2
-            self.stats.ships_left -= 1
+        if self.stats.thunderbird_hp > 0:
+            # what happens when the player get's hit
+            self.thunderbird_ship.explode()
+            self.thunderbird_ship.shield_on = False
+            self.settings.thunderbird_bullet_count = 1
+            if self.settings.thunderbird_bullets_allowed > 1:
+                self.settings.thunderbird_bullets_allowed -= 2
+            self.stats.thunderbird_hp -= 1
 
-            self.first_player_ship.center_ship()
+            self.thunderbird_ship.center_ship()
             self.score_board.prep_hp()
         else:
-            self.stats.player_one_active = False
-            if self.stats.player_two_active:
-                self.first_player_bullets.empty()
+            # player becomes inactive when loses all hp
+            self.thunderbird_ship.alive = False
+            # if the other player is active, remove bullets and continue
+            # until both players are dead
+            if self.phoenix_ship.alive:
+                self.thunderbird_bullets.empty()
             else:
+                # game over if both player are inactive.
                 self.stats.game_active = False
 
 
-    def _second_player_ship_hit(self):
-        """Respond to the second player ship being hit by an alien, bullet or asteroid."""
-        if self.second_player_ship.exploding:
+    def _phoenix_ship_hit(self):
+        """Respond to the Phoenix ship being hit by an alien, bullet or asteroid."""
+        if self.phoenix_ship.exploding:
             return
 
-        if self.stats.player_two_hp > 0:
-            self.second_player_ship.explode()
-            self.second_player_ship.shield_on = False
-            self.settings.fire_bullet_count = 1
-            if self.settings.second_player_bullets_allowed > 1:
-                self.settings.second_player_bullets_allowed -= 2
-            self.stats.player_two_hp -= 1
+        if self.stats.phoenix_hp > 0:
+            # what happens when the player gets hit
+            self.phoenix_ship.explode()
+            self.phoenix_ship.shield_on = False
+            self.settings.phoenix_bullet_count = 1
+            if self.settings.phoenix_bullets_allowed > 1:
+                self.settings.phoenix_bullets_allowed -= 2
+            self.stats.phoenix_hp -= 1
 
-            self.second_player_ship.center_ship()
+            self.phoenix_ship.center_ship()
             self.score_board.prep_hp()
         else:
-            self.stats.player_two_active = False
-            if self.stats.player_one_active:
-                self.second_player_bullets.empty()
+            # player becomes inactive when loses all hp
+            self.phoenix_ship.alive = False
+            # if the other player is active, remove bullets and continue
+            # until both players are dead
+            if self.thunderbird_ship.alive:
+                self.phoenix_bullets.empty()
             else:
+                # game over if both players are inactive.
                 self.stats.game_active = False
 
 
@@ -788,7 +804,7 @@ class AlienOnslaught:
         available_space_x = self.settings.screen_width - (3 * alien_width)
         number_aliens_x = available_space_x // (2 * alien_width)
 
-        ship_height = self.first_player_ship.rect.height
+        ship_height = self.thunderbird_ship.rect.height
         available_space_y = (self.settings.screen_height -
                              (12 * alien_height) - ship_height)
         number_rows = available_space_y // (2 * alien_height)
@@ -804,7 +820,6 @@ class AlienOnslaught:
                 self._create_alien(alien_number, row_number)
                 self.aliens.sprites()[-1].rect.x = x_coord + (alien_width * 1.5 * alien_number)
                 self.aliens.sprites()[-1].rect.y = y_coord + (2 * alien_height * row_number)
-
 
 
     def _create_boss_alien(self):
@@ -830,17 +845,17 @@ class AlienOnslaught:
         self.aliens.update()
 
         # Look for alien-ship collisions.
-        if pygame.sprite.spritecollideany(self.first_player_ship, self.aliens):
-            self._first_player_ship_hit()
-        if pygame.sprite.spritecollideany(self.second_player_ship, self.aliens):
-            self._second_player_ship_hit()
-
+        if pygame.sprite.spritecollideany(self.thunderbird_ship, self.aliens):
+            self._thunderbird_ship_hit()
+        if pygame.sprite.spritecollideany(self.phoenix_ship, self.aliens):
+            self._phoenix_ship_hit()
         # Look for aliens hitting the bottom of the screen.
         self._check_aliens_bottom()
 
 
     def _create_alien_bullet(self, alien):
         """Create an alien bullet at the specified alien rect"""
+        # create different bullets for bosses
         if isinstance(alien, BossAlien):
             bullet = BossBullet(self, alien)
         else:
@@ -878,6 +893,7 @@ class AlienOnslaught:
 
     def _change_fleet_direction(self):
         """Change the direction of each alien and drop them down."""
+        # bosses are not moving down
         for alien in self.aliens.sprites():
             if isinstance(alien, BossAlien):
                 if alien.check_edges():
@@ -896,30 +912,19 @@ class AlienOnslaught:
 
     def _check_aliens_bottom(self):
         """Check if an alien have reached the bottom of the screen"""
+        # if an alien reaches the bottom of the screen, both players are losing 1hp
         screen_rect = self.screen.get_rect()
         for alien in self.aliens.sprites():
             if alien.rect.bottom >= screen_rect.bottom:
-                self._first_player_ship_hit()
-                self._second_player_ship_hit()
+                self._thunderbird_ship_hit()
+                self._phoenix_ship_hit()
                 break
-
-
-    def _create_power_up(self):
-        """Create a random power up"""
-        if random.randint(0, 4) == 0:
-            power_up = HealthPowerUp(self)
-        else:
-            power_up = PowerUp(self)
-        power_up.rect.x = random.randint(0, self.settings.screen_width - power_up.rect.width)
-        power_up.rect.y = random.randint(-100, -40)
-        self.power_ups.add(power_up)
-
 
     def _check_game_over(self):
         """Check if the game is over and if so, display the game over image"""
-        if not any([self.stats.game_active, self.stats.player_one_active,
-                     self.stats.player_two_active]):
-            self.screen.blit(self.game_over, self.game_over_rect)
+        if not any([self.stats.game_active, self.thunderbird_ship.alive,
+                     self.phoenix_ship.alive]):
+            self.screen.blit(self.settings.game_over, self.game_over_rect)
             self.aliens.empty()
             self.power_ups.empty()
             self.alien_bullet.empty()
@@ -927,7 +932,7 @@ class AlienOnslaught:
 
     def _initialize_game_over(self):
         """Set the location of the game over image on the screen"""
-        game_over_rect = self.game_over.get_rect()
+        game_over_rect = self.settings.game_over.get_rect()
         game_over_x = (self.settings.screen_width - game_over_rect.width) / 2
         game_over_y = (self.settings.screen_height - game_over_rect.height) / 2 - 100
         self.game_over_rect = pygame.Rect(game_over_x, game_over_y,
@@ -953,6 +958,7 @@ class AlienOnslaught:
         medium_clicked = self.medium.rect.collidepoint(mouse_pos)
         hard_clicked = self.hard.rect.collidepoint(mouse_pos)
 
+        # set the difficulty for the game 
         if easy_clicked and not self.stats.game_active:
             self.settings.speedup_scale = 0.3
             self.show_difficulty = False
@@ -981,8 +987,7 @@ class AlienOnslaught:
 
     def _reset_game(self):
         # Reset the game statistics.
-        self.stats.reset_stats()
-        self.second_stats.reset_stats()
+        self.stats.reset_stats(self.phoenix_ship, self.thunderbird_ship)
         self.settings.initialize_dynamic_settings()
         self.stats.game_active = True
         self.score_board.prep_score()
@@ -990,34 +995,34 @@ class AlienOnslaught:
         self.score_board.prep_hp()
 
         # Get rid of remaining aliens, bullets, asteroids and power-ups.
-        self.first_player_bullets.empty()
-        self.second_player_bullets.empty()
+        self.thunderbird_bullets.empty()
+        self.phoenix_bullets.empty()
         self.alien_bullet.empty()
         self.power_ups.empty()
         self.aliens.empty()
         self.asteroids.empty()
 
         # Create a new fleet, play the warp animation and center the ships.
-        self.first_player_ship.start_warp()
-        self.second_player_ship.start_warp()
-        self.first_player_ship.center_ship()
-        self.second_player_ship.center_ship()
+        self.thunderbird_ship.start_warp()
+        self.phoenix_ship.start_warp()
+        self.thunderbird_ship.center_ship()
+        self.phoenix_ship.center_ship()
         self._create_fleet()
 
 
     def _update_screen(self):
         """Update images on the screen"""
-        if self.stats.player_one_active and self.stats.game_active:
-            self.first_player_ship.blitme()
-            for bullet in self.first_player_bullets.sprites():
-                bullet.draw_bullet()
-
-        if self.stats.player_two_active and self.stats.game_active:
-            self.second_player_ship.blitme()
-            for bullet in self.second_player_bullets.sprites():
-                bullet.draw_bullet()
-
+        # Draw game objects if game is active
         if self.stats.game_active:
+            self.thunderbird_ship.blitme()
+            self.phoenix_ship.blitme()
+
+            for bullet in self.thunderbird_bullets.sprites():
+                bullet.draw_bullet()
+
+            for bullet in self.phoenix_bullets.sprites():
+                bullet.draw_bullet()
+
             for bullet in self.alien_bullet.sprites():
                 bullet.draw_bullet()
 
@@ -1027,16 +1032,17 @@ class AlienOnslaught:
             for asteroid in self.asteroids.sprites():
                 asteroid.draw_asteroid()
 
-
             self.aliens.draw(self.screen)
             self.score_board.show_score()
 
-        if not self.stats.game_active:
+        # Draw buttons if game is not active
+        else:
             self.play_button.draw_button()
             self.quit_button.draw_button()
             self.menu_button.draw_button()
             self.difficulty.draw_button()
 
+            # Draw difficulty buttons if difficulty menu is shown
             if self.show_difficulty:
                 self.easy.draw_button()
                 self.medium.draw_button()
@@ -1052,9 +1058,9 @@ class SingleplayerAlienOnslaught(AlienOnslaught):
         super().__init__()
         self.score_board = SecondScoreBoard(self)
         self.clock = pygame.time.Clock()
-        self.first_player_ship = Thunderbird(self, 602, 612)
-        self.first_player_ship.single_player = True
-        self.ships = [self.first_player_ship]
+        self.thunderbird_ship = Thunderbird(self, 602, 612)
+        self.thunderbird_ship.single_player = True
+        self.ships = [self.thunderbird_ship]
         self.show_difficulty = False
 
     def run_game(self):
@@ -1083,7 +1089,7 @@ class SingleplayerAlienOnslaught(AlienOnslaught):
                     self._check_power_ups_collisions()
                     self._update_bullets()
                     self._update_aliens()
-                    self.first_player_ship.update_state()
+                    self.thunderbird_ship.update_state()
                     self._shield_collisions(self.ships, self.aliens,
                                              self.alien_bullet, self.asteroids)
 
@@ -1109,45 +1115,45 @@ class SingleplayerAlienOnslaught(AlienOnslaught):
             case _ if not self.paused:
                 match event.key:
                     case pygame.K_RIGHT:
-                        self.first_player_ship.moving_right = True
+                        self.thunderbird_ship.moving_right = True
                     case pygame.K_LEFT:
-                        self.first_player_ship.moving_left = True
+                        self.thunderbird_ship.moving_left = True
                     case pygame.K_UP:
-                        self.first_player_ship.moving_up = True
+                        self.thunderbird_ship.moving_up = True
                     case pygame.K_DOWN:
-                        self.first_player_ship.moving_down = True
+                        self.thunderbird_ship.moving_down = True
                     case pygame.K_RETURN:
                         self._fire_bullet(
-                            self.first_player_bullets,
-                            self.settings.first_player_bullets_allowed,
+                            self.thunderbird_bullets,
+                            self.settings.thunderbird_bullets_allowed,
                             bullet_class=Thunderbolt,
-                            num_bullets=self.settings.thunder_bullet_count,
-                            ship=self.first_player_ship)
-                        self.fire_sound.play()
+                            num_bullets=self.settings.thunderbird_bullet_count,
+                            ship=self.thunderbird_ship)
+                        self.settings.fire_sound.play()
                     case pygame.K_KP1:
-                        self.first_player_ship.image = self.first_player_ship.ship_images[0]
+                        self.thunderbird_ship.image = self.thunderbird_ship.ship_images[0]
                     case pygame.K_KP2:
-                        self.first_player_ship.image = self.first_player_ship.ship_images[1]
+                        self.thunderbird_ship.image = self.thunderbird_ship.ship_images[1]
                     case pygame.K_KP3:
-                        self.first_player_ship.image = self.first_player_ship.ship_images[2]
+                        self.thunderbird_ship.image = self.thunderbird_ship.ship_images[2]
 
 
     def _check_keyup_events(self, event):
         """Respot to key releases."""
         match event.key:
             case pygame.K_RIGHT:
-                self.first_player_ship.moving_right = False
+                self.thunderbird_ship.moving_right = False
             case pygame.K_LEFT:
-                self.first_player_ship.moving_left = False
+                self.thunderbird_ship.moving_left = False
             case pygame.K_UP:
-                self.first_player_ship.moving_up = False
+                self.thunderbird_ship.moving_up = False
             case pygame.K_DOWN:
-                self.first_player_ship.moving_down = False
+                self.thunderbird_ship.moving_down = False
 
 
     def _reset_game(self):
         # Reset the game statistics.
-        self.stats.reset_stats()
+        self.stats.reset_stats(self.phoenix_ship, self.thunderbird_ship)
         self.settings.initialize_dynamic_settings()
         self.stats.game_active = True
         self.score_board.prep_score()
@@ -1155,7 +1161,7 @@ class SingleplayerAlienOnslaught(AlienOnslaught):
         self.score_board.prep_hp()
 
         # Get rid of the remaining aliens, bullets, asteroids and power ups
-        self.first_player_bullets.empty()
+        self.thunderbird_bullets.empty()
         self.alien_bullet.empty()
         self.power_ups.empty()
         self.aliens.empty()
@@ -1163,81 +1169,61 @@ class SingleplayerAlienOnslaught(AlienOnslaught):
 
         # Create a new fleet and center the ship.
         self._create_fleet()
-        self.first_player_ship.start_warp()
-        self.first_player_ship.center_ship()
+        self.thunderbird_ship.start_warp()
+        self.thunderbird_ship.center_ship()
 
 
     def _update_bullets(self):
         """Update position of bullets and get rid of old bullets."""
         # Update bullet positions.
-        self.first_player_bullets.update()
+        self.thunderbird_bullets.update()
 
         # Get rid of bullets that have disappeared.
-        for bullet in self.first_player_bullets.copy():
+        for bullet in self.thunderbird_bullets.copy():
             if bullet.rect.bottom <= 0:
-                self.first_player_bullets.remove(bullet)
+                self.thunderbird_bullets.remove(bullet)
         self._check_bullet_alien_collisions()
 
 
     def _check_bullet_alien_collisions(self):
         """Respond to bullet-alien collisions."""
         # Remove any bullets and aliens that have collided.
-        first_player_ship_collisions = pygame.sprite.groupcollide(
-            self.first_player_bullets, self.aliens, True, False)
+        thunderbird_ship_collisions = pygame.sprite.groupcollide(
+            self.thunderbird_bullets, self.aliens, True, False)
 
         # Player collisions
-        if self.stats.player_one_active and first_player_ship_collisions:
-            self._handle_player_collisions(first_player_ship_collisions, 'player_1')
+        if self.thunderbird_ship.alive and thunderbird_ship_collisions:
+            self._handle_player_collisions(thunderbird_ship_collisions, 'thunderbird')
 
         if not self.aliens:
             self._handle_alien_creation()
             self.power_ups.empty()
             self.alien_bullet.empty()
             self.asteroids.empty()
-            self.first_player_bullets.empty()
+            self.thunderbird_bullets.empty()
             self.settings.increase_speed()
 
             # Increase level.
             self.stats.level += 1
             self.score_board.prep_level()
 
-    def _check_power_ups_collisions(self):
-        """Check for collision between a ship and a power-up"""
-        collision = pygame.sprite.spritecollideany(self.first_player_ship, self.power_ups)
 
-        if self.stats.player_one_active and collision:
-            if isinstance(collision, PowerUp):
-                self._first_ship_power_up()
-            elif isinstance(collision, HealthPowerUp):
-                self._first_health_power_up()
-            collision.kill()
-
-
-    def _check_asteroids_collisions(self):
-        """Check for collisions between the ship and asteroids"""
-        collision = pygame.sprite.spritecollideany(self.first_player_ship, self.asteroids)
-
-        if self.stats.player_one_active and collision:
-            self._first_player_ship_hit()
-            collision.kill()
-
-
-    def _first_player_ship_hit(self):
-        """Respond to the first player ship being hit by an alien."""
-        if self.first_player_ship.exploding:
+    def _thunderbird_ship_hit(self):
+        """Respond to the Thunderbird ship being hit by an alien."""
+        if self.thunderbird_ship.exploding:
             return
 
-        if self.stats.ships_left > 0:
-            self.first_player_ship.explode()
-            self.first_player_ship.shield_on = False
-            self.settings.thunder_bullet_count = 1
-            if self.settings.first_player_bullets_allowed > 1:
-                self.settings.first_player_bullets_allowed -= 2
-            self.stats.ships_left -= 1
-            self.first_player_ship.center_ship()
+        if self.stats.thunderbird_hp > 0:
+            self.thunderbird_ship.explode()
+            self.thunderbird_ship.shield_on = False
+            self.settings.thunderbird_bullet_count = 1
+            if self.settings.thunderbird_bullets_allowed > 1:
+                self.settings.thunderbird_bullets_allowed -= 2
+            self.stats.thunderbird_hp -= 1
+            self.thunderbird_ship.center_ship()
             self.score_board.prep_hp()
         else:
-            self.stats.player_one_active = False
+            self.thunderbird_ship.alive = False
             self.stats.game_active = False
 
     def _update_aliens(self):
@@ -1247,26 +1233,28 @@ class SingleplayerAlienOnslaught(AlienOnslaught):
         self.aliens.update()
 
         # Look for alien-ship collisions.
-        if pygame.sprite.spritecollideany(self.first_player_ship, self.aliens):
-            self._first_player_ship_hit()
+        if pygame.sprite.spritecollideany(self.thunderbird_ship, self.aliens):
+            self._thunderbird_ship_hit()
         # Look for aliens hitting the bottom of the screen.
         self._check_aliens_bottom()
 
 
     def _check_game_over(self):
-        if not self.stats.game_active and not self.stats.player_one_active:
-            self.screen.blit(self.game_over, self.game_over_rect)
+        """Check if the game is over, if so, display the game over image"""
+        if not self.stats.game_active and not self.thunderbird_ship.alive:
+            self.screen.blit(self.settings.game_over, self.game_over_rect)
             self.aliens.empty()
             self.power_ups.empty()
             self.alien_bullet.empty()
 
 
     def _update_screen(self):
-        """Update images on the screen, and flip to the new screen."""
-        if self.stats.player_one_active and self.stats.game_active:
-            self.first_player_ship.blitme()
+        """Update images on the screen."""
+        # Draw game objects if the game is active.
+        if self.stats.game_active:
+            self.thunderbird_ship.blitme()
 
-            for bullet in self.first_player_bullets.sprites():
+            for bullet in self.thunderbird_bullets.sprites():
                 bullet.draw_bullet()
 
             for power_up in self.power_ups.sprites():
@@ -1281,6 +1269,7 @@ class SingleplayerAlienOnslaught(AlienOnslaught):
             self.aliens.draw(self.screen)
             # Draw the score information.
             self.score_board.show_score()
+
         # Draw the buttons if the game is inactive.
         if not self.stats.game_active:
             self.play_button.draw_button()
