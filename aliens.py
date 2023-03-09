@@ -1,6 +1,6 @@
 """
 Alien module
-This module contains the class for creating instances of aliens.
+This module contains the class for creating instances of aliens and bosses.
 """
 import math
 import random
@@ -86,8 +86,10 @@ class Alien(Sprite):
             if not self.check_edges():
                 self.direction *= -1
             self.last_direction_change_time = now
-            self.direction_change_delay = random.randint(3000, 5000)
+            # how often the direction changes
+            self.direction_change_delay = random.randint(3000, 5000) # miliseconds
 
+        # Change vertical direction
         now = pygame.time.get_ticks()
         time = now + self.time_offset
         self.rect.y = round(self.rect.y + self.amplitude * math.sin(self.frequency * time))
