@@ -22,6 +22,7 @@ class Thunderbird(Sprite):
         self.rect.x = x
         self.rect.y = y
 
+        self.alive: bool = True
         self.bullet_power = True
         self.exploding = False
         self.shield_on = False
@@ -33,7 +34,7 @@ class Thunderbird(Sprite):
         self.moving_left = False
         self.moving_up = False
         self.moving_down = False
-
+        # Ship images
         self.ship_images = []
         self.load_ship_images()
 
@@ -96,6 +97,8 @@ class Thunderbird(Sprite):
     def update_state(self):
         """Update the ship's position based on the movement flags."""
         if not self.exploding:
+            # if the ship is not exploding and is warping, play the warp animation,
+            # and then change to the regular ship image
             if self.is_warping:
                 self.warp_counter += 1
                 if self.warp_counter >= self.warp_delay:
@@ -108,15 +111,15 @@ class Thunderbird(Sprite):
                         self.image = self.warp_images[self.warp_index]
                     self.warp_counter = 0
 
-            # Update the ship's x value, not the rect.
+            # Update the ship's x value.
             if self.moving_right and self.rect.right < self.screen_rect.right:
-                self.x_pos += self.settings.first_player_ship_speed
+                self.x_pos += self.settings.thunderbird_ship_speed
             if self.moving_left and self.rect.left > 0:
-                self.x_pos -= self.settings.first_player_ship_speed
+                self.x_pos -= self.settings.thunderbird_ship_speed
             if self.moving_up and self.rect.top > 0:
-                self.y_pos -= self.settings.first_player_ship_speed
+                self.y_pos -= self.settings.thunderbird_ship_speed
             if self.moving_down and self.rect.bottom <= self.screen_rect.bottom:
-                self.y_pos += self.settings.first_player_ship_speed
+                self.y_pos += self.settings.thunderbird_ship_speed
         else:
             # Update the explosion animation
             self.current_frame = (self.current_frame + 1) % len(self.explosion_frames)
@@ -125,7 +128,7 @@ class Thunderbird(Sprite):
                 # If the animation is complete, reset the ship
                 self.exploding = False
                 self.center_ship()
-
+        # when shield is active, display it on the ship
         if self.shield_on:
             self.current_shield_frame = (self.current_shield_frame + 1) % len(self.shield_frames)
             self.shield_image = self.shield_frames[self.current_shield_frame]
@@ -143,13 +146,20 @@ class Thunderbird(Sprite):
 
     def blitme(self):
         """Draw the ship at its current location."""
+        # if ship is not alive, return
+        if not self.alive:
+            return
+        # if ship is warping, display the warp animation
         if self.is_warping:
             self.screen.blit(self.warp_images[self.warp_index], self.rect)
+        # if the ship is not exploding, display regular ship image
         elif not self.exploding:
             self.screen.blit(self.image, self.rect)
+            # if shield is on, display the shield
             if self.shield_on:
                 self.screen.blit(self.shield_image, self.shield_rect)
         else:
+            # display the explosion
             self.screen.blit(self.explosion_image, self.explosion_rect)
 
     def center_ship(self):
@@ -200,13 +210,13 @@ class Phoenix(Thunderbird):
 
             # Update the ship's x value, not the rect.
             if self.moving_right and self.rect.right < self.screen_rect.right:
-                self.x_pos += self.settings.first_player_ship_speed
+                self.x_pos += self.settings.phoenix_ship_speed
             if self.moving_left and self.rect.left > 0:
-                self.x_pos -= self.settings.first_player_ship_speed
+                self.x_pos -= self.settings.phoenix_ship_speed
             if self.moving_up and self.rect.top > 0:
-                self.y_pos -= self.settings.first_player_ship_speed
+                self.y_pos -= self.settings.phoenix_ship_speed
             if self.moving_down and self.rect.bottom <= self.screen_rect.bottom:
-                self.y_pos += self.settings.first_player_ship_speed
+                self.y_pos += self.settings.phoenix_ship_speed
         else:
             # Update the explosion animation
             self.current_frame = (self.current_frame + 1) % len(self.explosion_frames)
