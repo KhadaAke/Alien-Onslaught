@@ -1,7 +1,7 @@
 """
 Settings module
 This module contains the settings for the game such as:
-background , sounds, bullet, ships, aliens, game speed.
+background , sounds, bullet, ships, aliens, game difficulty.
 """
 import pygame
 
