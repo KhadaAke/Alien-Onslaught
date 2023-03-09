@@ -45,3 +45,4 @@
 
 ### Version_2.4:
 * Alien movement changed, now the aliens are randomly moving in different directions.
+* Code improvements: more concise, refractored, more readable, documented.
