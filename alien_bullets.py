@@ -24,6 +24,8 @@ class AlienBullet(Sprite):
 
 
     def update(self):
+        """Update bullet position"""
+        # bullet goes down
         self.y_pos += self.settings.alien_bullet_speed
         self.rect.y = self.y_pos
 
@@ -58,7 +60,8 @@ class BossBullet(Sprite):
             self.image = self.motherbullet
 
     def update(self):
-        """Move the bullet up the screen."""
+        """Update the bullet location"""
+        # bullet goes down
         self.y_pos += self.settings.alien_bullet_speed
         self.rect.y = self.y_pos
         self.rect.x += round(self.x_vel)
