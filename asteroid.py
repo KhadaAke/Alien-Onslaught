@@ -8,13 +8,13 @@ import pygame
 from pygame.sprite import Sprite
 
 
-
 class Asteroid(Sprite):
     """A class that manages the power ups for the game"""
     def __init__(self, ai_game):
         super().__init__()
         self.screen = ai_game.screen
         self.settings = ai_game.settings
+
         # Load asteroid frames and set initial frame
         self.frames = []
         for i in range(120):
