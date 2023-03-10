@@ -8,6 +8,7 @@ reach higher levels and increase their high score.
 Author: [Miron Alexandru]
 Date: 
 """
+import json
 import sys
 import random
 import pygame
@@ -41,11 +42,13 @@ class AlienOnslaught:
         self.last_alien_bullet_time = 0
         self.last_asteroid_time = 0
         self.button_names = ["play_button", "quit_button", "menu_button",
-                            'difficulty', 'easy', 'medium', 'hard']
+                            'difficulty', 'easy', 'medium', 'hard', 'high_scores']
         self.button_images = self._load_button_images(self.button_names)
         self.paused = False
         self.show_difficulty = False
         self.resizable = True
+        self.high_score_saved = False
+        self.show_high_scores = False
 
 
         self._initialize_game_objects()
@@ -55,10 +58,7 @@ class AlienOnslaught:
         self._initialize_menu_buttons()
 
         pygame.display.set_caption("Alien Onslaught")
-        if not self.thunderbird_ship.alive:
-            print('asd')
-        elif not self.phoenix_ship.alive:
-            print('asda')
+
 
     def _initialize_start_menu(self):
         """Initializes variables for the start menu"""
@@ -75,33 +75,45 @@ class AlienOnslaught:
                                                 (self.settings.screen_width - 50, 50)})
 
         self.font = pygame.font.SysFont('arialbold', 35)
-        self.color = (255, 255, 255)
+        self.color = 'white'
         self.t1_surfaces, self.t1_rects = self.render_text(
                                     self.settings.p1_controls,
                                     self.font, self.color,
                                     (self.p1_controls_rect.left + 30,
-                                    self.p1_controls_rect.top + 30))
+                                    self.p1_controls_rect.top + 30), 25)
         self.t2_surfaces, self.t2_rects = self.render_text(
                                         self.settings.p2_controls,
                                         self.font, self.color,
                                         (self.p2_controls_rect.left + 30,
-                                        self.p2_controls_rect.top + 30))
+                                        self.p2_controls_rect.top + 30), 25)
 
 
-    def render_text(self, text, font, color, start_pos):
-        """Render text with new_lines"""
+    def render_text(self, text, font, color, start_pos, line_spacing, second_color=None):
+        """Render text with new_lines and tabs"""
         lines = text.split('\n')
 
         text_surfaces = []
         text_rects = []
 
+        tab_width = 10  # Number of spaces per tab
+
         for i, line in enumerate(lines):
-            text_surface = font.render(line, True, color, None)
-            text_rect = text_surface.get_rect(topleft=(start_pos[0], start_pos[1] + i * 25))
+            # Replace tabs with spaces
+            line = line.replace('\t', ' ' * tab_width)
+
+            if i  == 0 and second_color:
+                text_surface = font.render(line, True, second_color, None)
+            else:
+                text_surface = font.render(line, True, color, None)
+
+            text_rect = text_surface.get_rect(topleft=(start_pos[0],
+                                                        start_pos[1] + i * line_spacing))
             text_surfaces.append(text_surface)
             text_rects.append(text_rect)
 
         return text_surfaces, text_rects
+
+
 
 
     def _load_controls_image(self, image_name, position):
@@ -179,8 +191,10 @@ class AlienOnslaught:
         self.play_button = Button(self, self.button_images["play_button"],(0, 0), center=True)
         self.difficulty = Button(self, self.button_images["difficulty"],
                             (self.play_button.rect.centerx - 74, self.play_button.rect.bottom))
-        self.menu_button = Button(self, self.button_images["menu_button"],
+        self.high_scores = Button(self, self.button_images['high_scores'],
                             (self.difficulty.rect.centerx - 74, self.difficulty.rect.bottom))
+        self.menu_button = Button(self, self.button_images["menu_button"],
+                            (self.high_scores.rect.centerx - 74, self.high_scores.rect.bottom))
         self.quit_button = Button(self, self.button_images["quit_button"],
                             (self.menu_button.rect.centerx - 74, self.menu_button.rect.bottom))
         self.easy = Button(self, self.button_images['easy'], (self.difficulty.rect.right - 10,
@@ -189,7 +203,6 @@ class AlienOnslaught:
                                                             self.easy.rect.y))
         self.hard = Button(self, self.button_images['hard'], (self.medium.rect.right - 5,
                                                             self.medium.rect.y))
-
 
     def run_game(self):
         """Main loop for the game."""
@@ -228,6 +241,72 @@ class AlienOnslaught:
             self._check_for_pause()
 
 
+    def display_high_scores(self):
+        """Display the high scores on the screen."""
+        # Load the high score data from the JSON file,
+        # or create a new high score list if there is an error
+        filename = 'high_score.json'
+        try:
+            with open(filename, 'r', encoding='utf-8') as score_file:
+                high_scores = json.load(score_file)
+        except json.JSONDecodeError:
+            high_scores = {'high_scores': [0] * 10}
+
+        # Get the scores from the high score list and create a new list of tuples
+        # containing the score and its rank
+        scores = high_scores['high_scores']
+        ranked_scores = [(i, score) for i, score in enumerate(scores, 1) if score > 0]
+
+        # Create formatted strings for each rank and score
+        rank_strings = [
+            f"{('1st' if rank == 1 else '2nd' if rank == 2 else '3rd' if rank == 3 else rank)}:" 
+            for rank, score in ranked_scores
+        ]
+        score_strings = [f"{score}" for rank, score in ranked_scores]
+
+        score_text = "\n".join(score_strings)
+        rank_text = "\n".join(rank_strings)
+
+        # Calculate the relative position of the text based on the screen size
+        screen_width, screen_height = self.screen.get_size()
+        title_x = int(screen_width * 0.065)
+        title_y = int(screen_height * 0.35)
+        rank_x = int(screen_width * 0.03)
+        rank_y = int(screen_height * 0.45)
+        score_x = int(screen_width * 0.25)
+        score_y = rank_y
+
+        # Render the score text and rank text as surfaces with new lines using different fonts
+        font = pygame.font.SysFont('impact', int(screen_height * 0.07))
+        text_surfaces, text_rects = self.render_text(
+            "HIGH SCORES",
+            font,
+            'yellow',
+            (title_x, title_y),
+            int(screen_height * 0.06))
+
+        font = pygame.font.SysFont('impact', int(screen_height * 0.05))
+        rank_surfaces, rank_rects = self.render_text(
+            rank_text,
+            font,
+            'red',
+            (rank_x, rank_y),
+            int(screen_height * 0.05))
+
+        font = pygame.font.SysFont('impact', int(screen_height * 0.05))
+        scores_surfaces, scores_rects = self.render_text(
+            score_text,
+            font,
+            'red',
+            (score_x, score_y),
+            int(screen_height * 0.05))
+
+        # Blit the score text surfaces onto the screen using a loop to avoid repetitive code
+        for surfaces, rects in [(text_surfaces, text_rects), (rank_surfaces, rank_rects),
+                                 (scores_surfaces, scores_rects)]:
+            for surface, rect in zip(surfaces, rects):
+                self.screen.blit(surface, rect)
+
     def check_events(self):
         """Respond to keypresses, mouse and videoresize events."""
         for event in pygame.event.get():
@@ -259,8 +338,10 @@ class AlienOnslaught:
         self.play_button.update_pos(self.screen.get_rect().center)
         self.difficulty.update_pos(self.play_button.rect.centerx - 74,
                                     self.play_button.rect.bottom)
-        self.menu_button.update_pos(self.difficulty.rect.centerx - 74,
-                                     self.difficulty.rect.bottom)
+        self.high_scores.update_pos(self.difficulty.rect.centerx -74,
+                                    self.difficulty.rect.bottom)
+        self.menu_button.update_pos(self.high_scores.rect.centerx - 74,
+                                     self.high_scores.rect.bottom)
         self.quit_button.update_pos(self.menu_button.rect.centerx - 74,
                                      self.menu_button.rect.bottom)
         self.easy.update_pos(self.difficulty.rect.right - 10, self.difficulty.rect.y)
@@ -629,7 +710,8 @@ class AlienOnslaught:
         If a collision occurs, a random power up is activated for the coresponding player
         and the power up is removed.
         """
-        # Define a dict that maps each player to their corresponding ship, active status, and power-up functions
+        # Define a dict that maps each player to their corresponding ship,
+        # active status, and power-up functions
         player_info = {
             "thunderbird": {
                 "ship": self.thunderbird_ship,
@@ -928,6 +1010,10 @@ class AlienOnslaught:
             self.aliens.empty()
             self.power_ups.empty()
             self.alien_bullet.empty()
+            self.score_board.check_high_score()
+            if not self.high_score_saved:
+                self.score_board.save_high_score()
+                self.high_score_saved = True
 
 
     def _initialize_game_over(self):
@@ -957,8 +1043,9 @@ class AlienOnslaught:
         easy_clicked = self.easy.rect.collidepoint(mouse_pos)
         medium_clicked = self.medium.rect.collidepoint(mouse_pos)
         hard_clicked = self.hard.rect.collidepoint(mouse_pos)
+        high_scores_clicked = self.high_scores.rect.collidepoint(mouse_pos)
 
-        # set the difficulty for the game 
+        # set the difficulty for the game
         if easy_clicked and not self.stats.game_active:
             self.settings.speedup_scale = 0.3
             self.show_difficulty = False
@@ -970,9 +1057,16 @@ class AlienOnslaught:
             self.show_difficulty = False
         if button_clicked and not self.stats.game_active:
             self.show_difficulty = False
+            self.show_high_scores = False
             self._reset_game()
         if menu_clicked and not self.stats.game_active:
             self.run_menu()
+
+        if high_scores_clicked and not self.stats.game_active:
+            if self.show_high_scores:
+                self.show_high_scores = False
+            else:
+                self.show_high_scores = True
 
         if difficulty_clicked and not self.stats.game_active:
             if self.show_difficulty:
@@ -990,6 +1084,7 @@ class AlienOnslaught:
         self.stats.reset_stats(self.phoenix_ship, self.thunderbird_ship)
         self.settings.initialize_dynamic_settings()
         self.stats.game_active = True
+        self.high_score_saved = False
         self.score_board.prep_score()
         self.score_board.prep_level()
         self.score_board.prep_hp()
@@ -1041,12 +1136,16 @@ class AlienOnslaught:
             self.quit_button.draw_button()
             self.menu_button.draw_button()
             self.difficulty.draw_button()
+            self.high_scores.draw_button()
 
             # Draw difficulty buttons if difficulty menu is shown
             if self.show_difficulty:
                 self.easy.draw_button()
                 self.medium.draw_button()
                 self.hard.draw_button()
+
+            if self.show_high_scores:
+                self.display_high_scores()
 
         pygame.display.flip()
 
@@ -1061,7 +1160,7 @@ class SingleplayerAlienOnslaught(AlienOnslaught):
         self.thunderbird_ship = Thunderbird(self, 602, 612)
         self.thunderbird_ship.single_player = True
         self.ships = [self.thunderbird_ship]
-        self.show_difficulty = False
+
 
     def run_game(self):
         """Main loop of the game"""
@@ -1156,6 +1255,7 @@ class SingleplayerAlienOnslaught(AlienOnslaught):
         self.stats.reset_stats(self.phoenix_ship, self.thunderbird_ship)
         self.settings.initialize_dynamic_settings()
         self.stats.game_active = True
+        self.high_score_saved = False
         self.score_board.prep_score()
         self.score_board.prep_level()
         self.score_board.prep_hp()
@@ -1246,6 +1346,10 @@ class SingleplayerAlienOnslaught(AlienOnslaught):
             self.aliens.empty()
             self.power_ups.empty()
             self.alien_bullet.empty()
+            self.score_board.check_high_score()
+            if not self.high_score_saved:
+                self.score_board.save_high_score()
+                self.high_score_saved = True
 
 
     def _update_screen(self):
@@ -1275,6 +1379,7 @@ class SingleplayerAlienOnslaught(AlienOnslaught):
             self.play_button.draw_button()
             self.quit_button.draw_button()
             self.menu_button.draw_button()
+            self.high_scores.draw_button()
             self.difficulty.draw_button()
 
             if self.show_difficulty:
@@ -1282,9 +1387,14 @@ class SingleplayerAlienOnslaught(AlienOnslaught):
                 self.medium.draw_button()
                 self.hard.draw_button()
 
+            if self.show_high_scores:
+                self.display_high_scores()
+
+
         pygame.display.flip()
 
 
 if __name__ =='__main__':
     start = AlienOnslaught()
     start.run_menu()
+  
