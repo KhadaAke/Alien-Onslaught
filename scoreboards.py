@@ -3,12 +3,10 @@ Scoreboard module
 This module contains the class that reports the scoring information such as:
 highscore, players score, health, level.
 """
-
+import json
 import pygame.font
 from pygame.sprite import Group
 from player_health import Heart
-
-
 
 class ScoreBoard:
     """A class to report scoring information."""
@@ -22,8 +20,8 @@ class ScoreBoard:
         self.second_stats = ai_game.stats
 
         # Font settings
-        self.text_color = (255, 0, 0)
-        self.level_color = (0, 0, 255)
+        self.text_color = 'red'
+        self.level_color = 'blue'
         self.font = pygame.font.SysFont('', 27)
 
         # Prepare the initial score images.
@@ -103,6 +101,27 @@ class ScoreBoard:
                 (10 + (second_heart_num + 1) * second_heart.rect.width))
             second_heart.rect.y = 10
             self.second_hearts.add(second_heart)
+
+    def save_high_score(self):
+        """Save the high score to a JSON file."""
+        filename = 'high_score.json'
+        try:
+            with open(filename, 'r', encoding='utf-8') as score_file:
+                high_scores = json.load(score_file)
+        except json.JSONDecodeError:
+            high_scores = {'high_scores': [0] * 10}
+
+        scores = high_scores['high_scores']
+        new_score = self.stats.score + self.second_stats.second_score
+
+        if new_score not in scores:
+            scores.append(new_score)
+            scores.sort(reverse=True)
+            scores = scores[:10]
+            high_scores['high_scores'] = scores
+
+            with open(filename, 'w', encoding='utf-8') as score_file:
+                json.dump(high_scores, score_file)
 
     def show_score(self):
         """Draw scores, level and health to the screen."""
