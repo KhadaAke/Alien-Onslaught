@@ -46,3 +46,4 @@
 ### Version_2.4:
 * Alien movement changed, now the aliens are randomly moving in different directions.
 * Code improvements: more concise, refractored, more readable, documented.
+* Implemented high scores, when the game ends the high score is saved and the players can see top 10 high scores by clicking the HIGH SCORES button.
