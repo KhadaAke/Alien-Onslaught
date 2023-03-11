@@ -1,7 +1,7 @@
 """
 Settings module
 This module contains the settings for the game such as:
-background , sounds, bullet, ships, aliens, game difficulty.
+background , sounds, bullet, ships, aliens, game speed.
 """
 import pygame
 
@@ -11,8 +11,8 @@ class Settings:
     def __init__(self):
         """Initialize the game's static settings."""
         # Screen Settings
-        self.screen_size = (1250, 660)
-        self.screen_width = 1250
+        self.screen_size = (1260, 660)
+        self.screen_width = 1260
         self.screen_height = 660
         # game background images
         self.bg_img = pygame.image.load('images/background/space.jpg')
@@ -31,11 +31,12 @@ class Settings:
         self.thunderbird_bullet_count = 1
 
         # Firebird settings
-        self.phoenix_bullet_count = 1
+        self.phoenix_bullet_count = 50
 
         # Alien settings
         self.alien_direction = 1
         self.max_alien_speed = 4.0
+        self.max_aliens_num = 35
         self.boss_hp = 50
         self.boss_points = 2500
         self.alien_points = 1
@@ -69,13 +70,15 @@ class Settings:
         self.phoenix_ship_speed = 3.5
         self.thunderbird_bullet_speed = 5.0
         self.phoenix_bullet_speed = 5.0
-        self.alien_speed = 1.2
-        self.alien_bullet_speed = 1.5
         self.thunderbird_bullets_allowed = 1
-        self.phoenix_bullets_allowed = 1
+        self.phoenix_bullets_allowed = 100
 
-        # Scoring
+        # Alien Settings
+        self.alien_speed = 1
+        self.alien_bullet_speed = 1.5
         self.alien_points = 1
+        self.fleet_rows = 3
+        self.aliens_num = 10
 
     def increase_speed(self):
         """Increase speed settings and alien point values."""
@@ -83,6 +86,10 @@ class Settings:
             self.alien_speed += self.speedup_scale
             self.alien_bullet_speed += self.speedup_scale
         self.alien_points = int(self.alien_points + self.score_scale)
+
+        if self.aliens_num < self.max_aliens_num:
+            self.aliens_num += 2
+
         # bosses have more hp on medium or hard difficulty
         if self.speedup_scale == 0.5:
             self.boss_hp = 75
