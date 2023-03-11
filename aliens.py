@@ -38,8 +38,9 @@ class Alien(Sprite):
         self.image = self.frames[self.current_frame]
 
         self.rect = self.image.get_rect()
-        self.rect.x = self.rect.width   # Start each new alien near the top left of the screen.
+        self.rect.x = random.randint(0, self.settings.screen_width - self.rect.width)
         self.rect.y = self.rect.height
+
 
         self.time_offset = random.uniform(0, 2*math.pi)
         self.amplitude = random.randint(1, 2)
@@ -62,10 +63,14 @@ class Alien(Sprite):
     def check_edges(self):
         """Return True if alien is at edge of screen."""
         screen_rect = self.screen.get_rect()
-        if (self.rect.right >= screen_rect.right or self.rect.left <= 0 or
-            self.rect.top <= 0):
+        if (self.rect.right >= screen_rect.right or self.rect.left <= 0):
             return True
 
+    def check_top_edges(self):
+        """Return True if alien is at the top of the screen."""
+        screen_rect = self.screen.get_rect()
+        if self.rect.top <= screen_rect.top:
+            return True
 
     def update(self):
         """Update alien position on screen."""
@@ -92,7 +97,7 @@ class Alien(Sprite):
         # Change vertical direction
         now = pygame.time.get_ticks()
         time = now + self.time_offset
-        self.rect.y = round(self.rect.y + self.amplitude * math.sin(self.frequency * time))
+        self.rect.y = round(self.rect.y + self.amplitude * math.sin(self.frequency * time) + 0.3)
 
 
 class BossAlien(Sprite):
