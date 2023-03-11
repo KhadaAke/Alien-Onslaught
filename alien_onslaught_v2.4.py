@@ -33,23 +33,16 @@ class AlienOnslaught:
         self.clock = pygame.time.Clock()
         self.settings = Settings()
         self.screen = pygame.display.set_mode(self.settings.screen_size, pygame.RESIZABLE)
-        self.settings.screen_width = self.screen.get_rect().width
-        self.settings.screen_height = self.screen.get_rect().height
         self.bg_img = pygame.transform.smoothscale(self.settings.bg_img, self.screen.get_size())
         self.bg_img_rect = self.bg_img.get_rect()
-        self.reset_bg = pygame.transform.smoothscale(self.settings.bg_img, self.screen.get_size())
-        self.last_power_up_time = 0
-        self.last_alien_bullet_time = 0
-        self.last_asteroid_time = 0
+        self.reset_bg = self.bg_img.copy()
+        self.last_power_up_time, self.last_alien_bullet_time, self.last_asteroid_time = 0, 0, 0
         self.button_names = ["play_button", "quit_button", "menu_button",
                             'difficulty', 'easy', 'medium', 'hard', 'high_scores']
         self.button_images = self._load_button_images(self.button_names)
-        self.paused = False
-        self.show_difficulty = False
-        self.resizable = True
-        self.high_score_saved = False
-        self.show_high_scores = False
-
+        self.paused, self.show_difficulty, self.resizable, \
+        self.high_score_saved, self.show_high_scores = \
+        False, False, True, False, False
 
         self._initialize_game_objects()
         self._initialize_game_buttons()
@@ -63,7 +56,7 @@ class AlienOnslaught:
     def _initialize_start_menu(self):
         """Initializes variables for the start menu"""
         self.button_names = ["single_player", "multiplayer",
-                            "player_controls", "menu_quit_button",]
+                            "player_controls", "menu_quit_button"]
         self.button_images = self._load_button_images(self.button_names)
 
         self.p1_controls, self.p1_controls_rect = self._load_controls_image(
@@ -115,7 +108,6 @@ class AlienOnslaught:
 
 
 
-
     def _load_controls_image(self, image_name, position):
         """Loads images for controls displayed on menu screen"""
         image = pygame.image.load(self.button_images[image_name])
@@ -130,6 +122,7 @@ class AlienOnslaught:
                             (self.single_button.rect.centerx - 100, self.single_button.rect.bottom))
         self.menu_quit_button = Button(self, self.button_images["menu_quit_button"],
                             (self.multi_button.rect.centerx - 100, self.multi_button.rect.bottom))
+
 
     def run_menu(self):
         """Runs the menu screen"""
@@ -240,7 +233,6 @@ class AlienOnslaught:
 
             self._check_for_pause()
 
-
     def display_high_scores(self):
         """Display the high scores on the screen."""
         # Load the high score data from the JSON file,
@@ -325,6 +317,11 @@ class AlienOnslaught:
 
     def _resize_screen(self, size):
         """Resize the game screen and update relevant game objects."""
+        min_width, min_height = 1260, 660
+        max_width, max_height = 1920, 1080
+        width = max(min(size[0], max_width), min_width)
+        height = max(min(size[1], max_height), min_height)
+        size = (width, height)
         self.screen = pygame.display.set_mode(size, pygame.RESIZABLE)
         self.settings.screen_width = self.screen.get_rect().width
         self.settings.screen_height = self.screen.get_rect().height
@@ -478,7 +475,10 @@ class AlienOnslaught:
     def _check_for_pause(self):
         """Check if the game is paused."""
         if self.paused:
-            self.screen.blit(self.settings.pause, (300, 150))
+            pause_rect = self.settings.pause.get_rect()
+            pause_rect.centerx = self.screen.get_rect().centerx
+            pause_rect.centery = self.screen.get_rect().centery
+            self.screen.blit(self.settings.pause, pause_rect)
             pygame.display.flip()
             while self.paused:
                 self.check_events()
@@ -880,28 +880,22 @@ class AlienOnslaught:
 
 
     def _create_fleet(self):
-        """Determine how many aliens fit on the screen and create the fleet of aliens."""
+        """Create the fleet of aliens."""
         alien = Alien(self)
         alien_width, alien_height = alien.rect.size
-        available_space_x = self.settings.screen_width - (3 * alien_width)
-        number_aliens_x = available_space_x // (2 * alien_width)
 
-        ship_height = self.thunderbird_ship.rect.height
-        available_space_y = (self.settings.screen_height -
-                             (12 * alien_height) - ship_height)
-        number_rows = available_space_y // (2 * alien_height)
+        # Calculate the starting y-coordinate for the first row of aliens
+        start_y = 50
 
         # Create the full fleet of aliens.
-        for row_number in range(number_rows):
-            for alien_number in range(number_aliens_x):
-                # Randomly generate x and y coordinates for the alien.
-                x_coord = random.randint(alien_width, available_space_x - alien_width)
-                y_coord = random.randint(35, available_space_y - (2 * alien_height))
-
-                # Create the alien and set its position.
-                self._create_alien(alien_number, row_number)
-                self.aliens.sprites()[-1].rect.x = x_coord + (alien_width * 1.5 * alien_number)
-                self.aliens.sprites()[-1].rect.y = y_coord + (2 * alien_height * row_number)
+        for row_number in range(self.settings.fleet_rows):
+            for alien_number in range(self.settings.aliens_num):
+                # Create the alien and set its starting position above the top of the screen
+                alien = Alien(self)
+                alien.rect.x = alien_width + 2 * alien_width * alien_number
+                alien.rect.y = start_y - (2 * alien_height * row_number)
+                # Add the alien to the group of aliens
+                self.aliens.add(alien)
 
 
     def _create_boss_alien(self):
@@ -909,15 +903,6 @@ class AlienOnslaught:
         boss_alien = BossAlien(self)
         self.aliens.add(boss_alien)
 
-
-    def _create_alien(self, alien_number, row_number):
-        """Create an alien and place it in the row"""
-        alien = Alien(self)
-        alien_width, _ = alien.rect.size
-        alien.x_pos = alien_width + 2 * alien_width * alien_number
-        alien.rect.x = alien.x_pos
-        alien.rect.y = alien.rect.height + 2 * alien.rect.height * row_number + 45
-        self.aliens.add(alien)
 
 
     def _update_aliens(self):
@@ -986,10 +971,8 @@ class AlienOnslaught:
             else:
                 if alien.check_edges():
                     alien.direction *= -1
+                elif alien.check_top_edges():
                     alien.rect.y += self.settings.alien_speed
-                else:
-                    alien.rect.x += (self.settings.alien_speed *
-                                    alien.direction)
 
 
     def _check_aliens_bottom(self):
