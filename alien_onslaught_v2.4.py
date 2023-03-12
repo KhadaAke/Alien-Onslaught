@@ -11,6 +11,7 @@ Date:
 import json
 import sys
 import random
+import time
 import pygame
 
 from game_settings import Settings
@@ -38,11 +39,13 @@ class AlienOnslaught:
         self.reset_bg = self.bg_img.copy()
         self.last_power_up_time, self.last_alien_bullet_time, self.last_asteroid_time = 0, 0, 0
         self.button_names = ["play_button", "quit_button", "menu_button",
-                            'difficulty', 'easy', 'medium', 'hard', 'high_scores']
+                            'difficulty', 'easy', 'medium', 'hard', 'high_scores',
+                            'game_modes', 'endless']
         self.button_images = self._load_button_images(self.button_names)
         self.paused, self.show_difficulty, self.resizable, \
-        self.high_score_saved, self.show_high_scores = \
-        False, False, True, False, False
+        self.high_score_saved, self.show_high_scores, self.show_game_modes = \
+        False, False, True, False, False, False
+        self.last_increase_time = 0
 
         self._initialize_game_objects()
         self._initialize_game_buttons()
@@ -184,8 +187,12 @@ class AlienOnslaught:
         self.play_button = Button(self, self.button_images["play_button"],(0, 0), center=True)
         self.difficulty = Button(self, self.button_images["difficulty"],
                             (self.play_button.rect.centerx - 74, self.play_button.rect.bottom))
-        self.high_scores = Button(self, self.button_images['high_scores'],
+        self.game_modes = Button(self, self.button_images["game_modes"],
                             (self.difficulty.rect.centerx - 74, self.difficulty.rect.bottom))
+        self.endless_button = Button(self, self.button_images["endless"],
+                            (self.game_modes.rect.right - 10, self.game_modes.rect.y))
+        self.high_scores = Button(self, self.button_images['high_scores'],
+                            (self.game_modes.rect.centerx - 74, self.game_modes.rect.bottom))
         self.menu_button = Button(self, self.button_images["menu_button"],
                             (self.high_scores.rect.centerx - 74, self.high_scores.rect.bottom))
         self.quit_button = Button(self, self.button_images["quit_button"],
@@ -215,6 +222,7 @@ class AlienOnslaught:
                 self._check_for_resize()
 
                 if self.stats.game_active:
+                    self.endless_game()
                     self._handle_level_tasks()
                     self._create_power_ups()
                     self._update_power_ups()
@@ -897,6 +905,25 @@ class AlienOnslaught:
                 # Add the alien to the group of aliens
                 self.aliens.add(alien)
 
+    def endless_game(self):
+        """Starts the endless game mode in which fleets of aliens and
+        asteroids keep coming and the speed of aliens and their bullets increases
+        over time."""
+        if self.settings.endless and len(self.aliens) < self.settings.endless_num:
+            self._create_fleet()
+
+        if self.settings.endless:
+            self._create_asteroids()
+            self._update_asteroids()
+            self._check_asteroids_collisions()
+
+        # Increase alien and bullet speed every 120 seconds
+        current_time = time.time()
+        if current_time - self.last_increase_time >= 120: # seconds
+            self.settings.alien_speed += 0.1
+            self.settings.alien_bullet_speed += 0.1
+            self.last_increase_time = current_time
+
 
     def _create_boss_alien(self):
         """Create a boss alien and add it to the aliens group."""
@@ -971,6 +998,7 @@ class AlienOnslaught:
             else:
                 if alien.check_edges():
                     alien.direction *= -1
+
                 elif alien.check_top_edges():
                     alien.rect.y += self.settings.alien_speed
 
@@ -1019,47 +1047,29 @@ class AlienOnslaught:
 
     def _check_buttons(self, mouse_pos):
         """Check for buttons being clicked and act accordingly."""
-        button_clicked = self.play_button.rect.collidepoint(mouse_pos)
-        quit_clicked = self.quit_button.rect.collidepoint(mouse_pos)
-        menu_clicked = self.menu_button.rect.collidepoint(mouse_pos)
-        difficulty_clicked = self.difficulty.rect.collidepoint(mouse_pos)
-        easy_clicked = self.easy.rect.collidepoint(mouse_pos)
-        medium_clicked = self.medium.rect.collidepoint(mouse_pos)
-        hard_clicked = self.hard.rect.collidepoint(mouse_pos)
-        high_scores_clicked = self.high_scores.rect.collidepoint(mouse_pos)
+        buttons = {
+            self.play_button: lambda: (self._reset_game(),
+                                       setattr(self, 'show_difficulty', False),
+                                       setattr(self, 'show_high_scores', False),
+                                       setattr(self, 'show_game_modes', False)),
+            self.quit_button: lambda: (pygame.quit(), sys.exit()),
+            self.menu_button: self.run_menu,
+            self.high_scores: lambda: setattr(self, 'show_high_scores', not self.show_high_scores),
+            self.game_modes: lambda: setattr(self, 'show_game_modes', not self.show_game_modes),
+            self.endless_button: lambda: (setattr(self.settings, 'endless', not self.settings.endless),
+                                           setattr(self, 'show_game_modes', False)),
+            self.easy: lambda: (setattr(self.settings, 'speedup_scale', 0.3),
+                                 setattr(self, 'show_difficulty', False)),
+            self.medium: lambda: (setattr(self.settings, 'speedup_scale', 0.5),
+                                   setattr(self, 'show_difficulty', False)),
+            self.hard: lambda: (setattr(self.settings, 'speedup_scale', 0.7),
+                                 setattr(self, 'show_difficulty', False)),
+            self.difficulty: lambda: setattr(self, 'show_difficulty', not self.show_difficulty),
+        }
+        for button, action in buttons.items():
+            if button.rect.collidepoint(mouse_pos) and not self.stats.game_active:
+                action()
 
-        # set the difficulty for the game
-        if easy_clicked and not self.stats.game_active:
-            self.settings.speedup_scale = 0.3
-            self.show_difficulty = False
-        if medium_clicked and not self.stats.game_active:
-            self.settings.speedup_scale = 0.5
-            self.show_difficulty = False
-        if hard_clicked and not self.stats.game_active:
-            self.settings.speedup_scale = 0.7
-            self.show_difficulty = False
-        if button_clicked and not self.stats.game_active:
-            self.show_difficulty = False
-            self.show_high_scores = False
-            self._reset_game()
-        if menu_clicked and not self.stats.game_active:
-            self.run_menu()
-
-        if high_scores_clicked and not self.stats.game_active:
-            if self.show_high_scores:
-                self.show_high_scores = False
-            else:
-                self.show_high_scores = True
-
-        if difficulty_clicked and not self.stats.game_active:
-            if self.show_difficulty:
-                self.show_difficulty = False
-            else:
-                self.show_difficulty = True
-
-        if quit_clicked and not self.stats.game_active:
-            pygame.quit()
-            sys.exit()
 
 
     def _reset_game(self):
@@ -1120,6 +1130,7 @@ class AlienOnslaught:
             self.menu_button.draw_button()
             self.difficulty.draw_button()
             self.high_scores.draw_button()
+            self.game_modes.draw_button()
 
             # Draw difficulty buttons if difficulty menu is shown
             if self.show_difficulty:
@@ -1129,6 +1140,9 @@ class AlienOnslaught:
 
             if self.show_high_scores:
                 self.display_high_scores()
+
+            if self.show_game_modes:
+                self.endless_button.draw_button()
 
         pygame.display.flip()
 
@@ -1163,6 +1177,7 @@ class SingleplayerAlienOnslaught(AlienOnslaught):
                 self._check_for_resize()
 
                 if self.stats.game_active:
+                    self.endless_game()
                     self._handle_level_tasks()
                     self._create_power_ups()
                     self._update_power_ups()
@@ -1364,6 +1379,7 @@ class SingleplayerAlienOnslaught(AlienOnslaught):
             self.menu_button.draw_button()
             self.high_scores.draw_button()
             self.difficulty.draw_button()
+            self.game_modes.draw_button()
 
             if self.show_difficulty:
                 self.easy.draw_button()
@@ -1373,6 +1389,9 @@ class SingleplayerAlienOnslaught(AlienOnslaught):
             if self.show_high_scores:
                 self.display_high_scores()
 
+            if self.show_game_modes:
+                self.endless_button.draw_button()
+
 
         pygame.display.flip()
 
@@ -1380,4 +1399,3 @@ class SingleplayerAlienOnslaught(AlienOnslaught):
 if __name__ =='__main__':
     start = AlienOnslaught()
     start.run_menu()
-  
