@@ -48,4 +48,6 @@
 * Code improvements: more concise, refractored, more readable, documented.
 * Implemented high scores, when the game ends the high score is saved and the players can see top 10 high scores by clicking the HIGH SCORES button.
 * Changed fleet creation, now aliens are dropping in rows from the top of the screen and the number of aliens in every row is increasing every level.
-* Added min am max window sizes: 1260x660 / 1920x1080
+* Added min am max window sizes: 1260x700 / 1920x1080
+### Version_2.5:
+* Implemented Game Modes: Endless game mode: Fleets of aliens and asteroids keep coming and the speed of aliens and their bullets increases over time.
