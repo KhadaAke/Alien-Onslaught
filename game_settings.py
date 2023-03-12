@@ -11,9 +11,9 @@ class Settings:
     def __init__(self):
         """Initialize the game's static settings."""
         # Screen Settings
-        self.screen_size = (1260, 660)
+        self.screen_size = (1260, 700)
         self.screen_width = 1260
-        self.screen_height = 660
+        self.screen_height = 700
         # game background images
         self.bg_img = pygame.image.load('images/background/space.jpg')
         self.second_bg = pygame.image.load('images/background/space2.png')
@@ -21,6 +21,7 @@ class Settings:
         self.game_over = pygame.image.load('images/other/gameover.png')
         self.pause = pygame.image.load('images/other/pause.png')
         self.fire_sound = pygame.mixer.Sound('sounds/fire.wav')
+        self.endless = False
 
         # Ships settings
         self.max_hp = 5
@@ -40,6 +41,7 @@ class Settings:
         self.boss_hp = 50
         self.boss_points = 2500
         self.alien_points = 1
+        self.endless_num = 50
 
         # PowerUps settings
         self.powerup_speed = 1.5
@@ -74,7 +76,7 @@ class Settings:
         self.phoenix_bullets_allowed = 100
 
         # Alien Settings
-        self.alien_speed = 1
+        self.alien_speed = 1.0
         self.alien_bullet_speed = 1.5
         self.alien_points = 1
         self.fleet_rows = 3
