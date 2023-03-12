@@ -1046,43 +1046,63 @@ class AlienOnslaught:
         return button_images
 
 
+    def create_button_actions_dict(self):
+        """Create a dictionary mapping buttons to their corresponding actions."""
+        return {
+            self.play_button: self.handle_play_button,
+            self.quit_button: self.handle_quit_button,
+            self.menu_button: self.run_menu,
+            self.high_scores: self.handle_high_scores_button,
+            self.game_modes: self.handle_game_modes_button,
+            self.endless_button: self.handle_endless_button,
+            self.easy: self.handle_difficulty_button(0.3),
+            self.medium: self.handle_difficulty_button(0.5),
+            self.hard: self.handle_difficulty_button(0.7),
+            self.difficulty: self.handle_difficulty_toggle
+        }
+
     def _check_buttons(self, mouse_pos):
         """Check for buttons being clicked and act accordingly."""
-        def get_button_actions():
-            return {
-                self.play_button.rect.collidepoint(mouse_pos): lambda: (
-                    self._reset_game(),
-                    setattr(self, 'show_difficulty', False),
-                    setattr(self, 'show_high_scores', False),
-                    setattr(self, 'show_game_modes', False)),
-                self.quit_button.rect.collidepoint(mouse_pos): lambda: (
-                    pygame.quit(),
-                    sys.exit()),
-                self.menu_button.rect.collidepoint(mouse_pos): self.run_menu,
-                self.high_scores.rect.collidepoint(mouse_pos): lambda: setattr(
-                    self, 'show_high_scores', not self.show_high_scores),
-                self.game_modes.rect.collidepoint(mouse_pos): lambda: setattr(
-                    self, 'show_game_modes', not self.show_game_modes),
-                self.endless_button.rect.collidepoint(mouse_pos): lambda: (
-                    setattr(self.settings, 'endless', not self.settings.endless),
-                    setattr(self, 'show_game_modes', False)),
-                self.easy.rect.collidepoint(mouse_pos): lambda: (
-                    setattr(self.settings, 'speedup_scale', 0.3),
-                    setattr(self, 'show_difficulty', False)),
-                self.medium.rect.collidepoint(mouse_pos): lambda: (
-                    setattr(self.settings, 'speedup_scale', 0.5),
-                    setattr(self, 'show_difficulty', False)),
-                self.hard.rect.collidepoint(mouse_pos): lambda: (
-                    setattr(self.settings, 'speedup_scale', 0.7),
-                    setattr(self, 'show_difficulty', False)),
-                self.difficulty.rect.collidepoint(mouse_pos): lambda: setattr(
-                    self, 'show_difficulty', not self.show_difficulty)
-            }
+        button_actions = self.create_button_actions_dict()
+        for button in button_actions:
+            if button.rect.collidepoint(mouse_pos) and not self.stats.game_active:
+                button_actions[button]()
 
-        button_actions = get_button_actions()
-        for button_clicked, action in button_actions.items():
-            if button_clicked and not self.stats.game_active:
-                action()
+    def handle_play_button(self):
+        """Reset game and hide all buttons"""
+        self._reset_game()
+        self.show_difficulty = False
+        self.show_high_scores = False
+        self.show_game_modes = False
+
+    def handle_quit_button(self):
+        """Quit game"""
+        pygame.quit()
+        sys.exit()
+
+    def handle_high_scores_button(self):
+        """Toggle the visibility of the high score"""
+        self.show_high_scores = not self.show_high_scores
+
+    def handle_game_modes_button(self):
+        """Toggle the visibility of the game modes"""
+        self.show_game_modes = not self.show_game_modes
+
+    def handle_endless_button(self):
+        """Toggle the game endless game mode setting and hide game mode buttons"""
+        self.settings.endless = not self.settings.endless
+        self.show_game_modes = False
+
+    def handle_difficulty_button(self, speedup_scale):
+        """Set the game difficulty (speed-up scale)"""
+        def handle():
+            self.settings.speedup_scale = speedup_scale
+            self.show_difficulty = False
+        return handle
+
+    def handle_difficulty_toggle(self):
+        """Toggle visibility of the difficulty buttons"""
+        self.show_difficulty = not self.show_difficulty
 
 
     def _reset_game(self):
