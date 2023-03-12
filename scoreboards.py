@@ -70,10 +70,12 @@ class ScoreBoard:
             self.stats.high_score = self.stats.score + self.second_stats.second_score
             self.prep_high_score()
 
-
     def prep_level(self):
         """Turn the level into a rendered image."""
-        level_str = "Level " + str(self.stats.level)
+        if self.settings.endless:
+            level_str =  "Endless Game Mode"
+        else:
+            level_str = "Level " + str(self.stats.level)
         self.level_image = self.font.render(level_str, True, self.level_color, None)
 
         # Position the level image in the center of the screen.
@@ -102,6 +104,7 @@ class ScoreBoard:
             second_heart.rect.y = 10
             self.second_hearts.add(second_heart)
 
+
     def save_high_score(self):
         """Save the high score to a JSON file."""
         filename = 'high_score.json'
@@ -122,6 +125,7 @@ class ScoreBoard:
 
             with open(filename, 'w', encoding='utf-8') as score_file:
                 json.dump(high_scores, score_file)
+
 
     def show_score(self):
         """Draw scores, level and health to the screen."""
