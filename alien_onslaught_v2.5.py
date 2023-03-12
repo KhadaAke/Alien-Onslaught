@@ -1068,6 +1068,7 @@ class AlienOnslaught:
             if button.rect.collidepoint(mouse_pos) and not self.stats.game_active:
                 button_actions[button]()
 
+
     def handle_play_button(self):
         """Reset game and hide all buttons"""
         self._reset_game()
@@ -1075,23 +1076,28 @@ class AlienOnslaught:
         self.show_high_scores = False
         self.show_game_modes = False
 
+
     def handle_quit_button(self):
         """Quit game"""
         pygame.quit()
         sys.exit()
 
+
     def handle_high_scores_button(self):
         """Toggle the visibility of the high score"""
         self.show_high_scores = not self.show_high_scores
+
 
     def handle_game_modes_button(self):
         """Toggle the visibility of the game modes"""
         self.show_game_modes = not self.show_game_modes
 
+
     def handle_endless_button(self):
         """Toggle the game endless game mode setting and hide game mode buttons"""
         self.settings.endless = not self.settings.endless
         self.show_game_modes = False
+
 
     def handle_difficulty_button(self, speedup_scale):
         """Set the game difficulty (speed-up scale)"""
@@ -1099,6 +1105,7 @@ class AlienOnslaught:
             self.settings.speedup_scale = speedup_scale
             self.show_difficulty = False
         return handle
+
 
     def handle_difficulty_toggle(self):
         """Toggle visibility of the difficulty buttons"""
