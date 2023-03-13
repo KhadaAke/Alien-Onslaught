@@ -34,13 +34,18 @@ class AlienOnslaught:
         self.clock = pygame.time.Clock()
         self.settings = Settings()
         self.screen = pygame.display.set_mode(self.settings.screen_size, pygame.RESIZABLE)
-        self.bg_img = pygame.transform.smoothscale(self.settings.bg_img, self.screen.get_size())
+        self.bg_img = pygame.transform.smoothscale(self.settings.bg_img,
+                                                    self.screen.get_size())
+        self.second_bg = pygame.transform.smoothscale(self.settings.second_bg,
+                                                       self.screen.get_size())
+        self.third_bg = pygame.transform.smoothscale(self.settings.third_bg,
+                                                      self.screen.get_size())
         self.bg_img_rect = self.bg_img.get_rect()
         self.reset_bg = self.bg_img.copy()
         self.last_power_up_time, self.last_alien_bullet_time, self.last_asteroid_time = 0, 0, 0
         self.button_names = ["play_button", "quit_button", "menu_button",
                             'difficulty', 'easy', 'medium', 'hard', 'high_scores',
-                            'game_modes', 'endless']
+                            'game_modes', 'endless', 'normal', 'last_stand']
         self.button_images = self._load_button_images(self.button_names)
         self.paused, self.show_difficulty, self.resizable, \
         self.high_score_saved, self.show_high_scores, self.show_game_modes = \
@@ -189,8 +194,12 @@ class AlienOnslaught:
                             (self.play_button.rect.centerx - 74, self.play_button.rect.bottom))
         self.game_modes = Button(self, self.button_images["game_modes"],
                             (self.difficulty.rect.centerx - 74, self.difficulty.rect.bottom))
-        self.endless_button = Button(self, self.button_images["endless"],
+        self.normal_button = Button(self, self.button_images["normal"],
                             (self.game_modes.rect.right - 10, self.game_modes.rect.y))
+        self.endless_button = Button(self, self.button_images["endless"],
+                            (self.normal_button.rect.right - 5, self.normal_button.rect.y))
+        self.last_stand_button = Button(self, self.button_images["last_stand"],
+                            (self.endless_button.rect.right - 5, self.endless_button.rect.y))
         self.high_scores = Button(self, self.button_images['high_scores'],
                             (self.game_modes.rect.centerx - 74, self.game_modes.rect.bottom))
         self.menu_button = Button(self, self.button_images["menu_button"],
@@ -222,7 +231,7 @@ class AlienOnslaught:
                 self._check_for_resize()
 
                 if self.stats.game_active:
-                    self.endless_game()
+                    self.game_mode()
                     self._handle_level_tasks()
                     self._create_power_ups()
                     self._update_power_ups()
@@ -519,8 +528,8 @@ class AlienOnslaught:
         """Change the background for different levels."""
         bg_images = {
             1: self.reset_bg,
-            6: self.settings.second_bg,
-            12: self.settings.third_bg,
+            6: self.second_bg,
+            12: self.third_bg,
         }
         self.bg_img = bg_images.get(self.stats.level, self.bg_img)
 
@@ -905,23 +914,46 @@ class AlienOnslaught:
                 # Add the alien to the group of aliens
                 self.aliens.add(alien)
 
-    def endless_game(self):
+    def game_mode(self):
+        """Starts the selected game mode."""
+        if self.settings.endless:
+            self._endless_game()
+        elif self.settings.last_stand:
+            self._last_stand_game()
+
+
+    def _endless_game(self):
         """Starts the endless game mode in which fleets of aliens and
         asteroids keep coming and the speed of aliens and their bullets increases
         over time."""
-        if self.settings.endless and len(self.aliens) < self.settings.endless_num:
+        if len(self.aliens) < self.settings.endless_num:
             self._create_fleet()
 
-        if self.settings.endless:
-            self._create_asteroids()
-            self._update_asteroids()
-            self._check_asteroids_collisions()
+        self._create_asteroids()
+        self._update_asteroids()
+        self._check_asteroids_collisions()
 
         # Increase alien and bullet speed every 120 seconds
         current_time = time.time()
         if current_time - self.last_increase_time >= 120: # seconds
             self.settings.alien_speed += 0.1
             self.settings.alien_bullet_speed += 0.1
+            self.last_increase_time = current_time
+
+
+    def _last_stand_game(self):
+        """Starts the Last Stand game mode in which the ship and bullets speed
+        of the players decreases over time"""
+        self._create_asteroids()
+        self._update_asteroids()
+        self._check_asteroids_collisions()
+
+        current_time = time.time()
+        if current_time - self.last_increase_time >= 120: # seconds
+            self.settings.thunderbird_ship_speed = max(2.0, self.settings.thunderbird_ship_speed - 0.2)
+            self.settings.phoenix_ship_speed = max(2.0, self.settings.phoenix_ship_speed - 0.2)
+            self.settings.thunderbird_bullet_speed = max(2.0, self.settings.thunderbird_bullet_speed - 0.2)
+            self.settings.phoenix_bullet_speed = max(2.0, self.settings.phoenix_bullet_speed - 0.2)
             self.last_increase_time = current_time
 
 
@@ -1055,18 +1087,21 @@ class AlienOnslaught:
             self.high_scores: self.handle_high_scores_button,
             self.game_modes: self.handle_game_modes_button,
             self.endless_button: self.handle_endless_button,
+            self.last_stand_button: self.handle_last_stand_button,
+            self.normal_button: self.handle_normal_button,
             self.easy: self.handle_difficulty_button(0.3),
             self.medium: self.handle_difficulty_button(0.5),
             self.hard: self.handle_difficulty_button(0.7),
             self.difficulty: self.handle_difficulty_toggle
         }
 
+
     def _check_buttons(self, mouse_pos):
         """Check for buttons being clicked and act accordingly."""
         button_actions = self.create_button_actions_dict()
-        for button in button_actions:
+        for button, action in button_actions.items():
             if button.rect.collidepoint(mouse_pos) and not self.stats.game_active:
-                button_actions[button]()
+                action()
 
 
     def handle_play_button(self):
@@ -1094,10 +1129,23 @@ class AlienOnslaught:
 
 
     def handle_endless_button(self):
-        """Toggle the game endless game mode setting and hide game mode buttons"""
+        """Toggle the endless game mode setting and hide game mode buttons"""
         self.settings.endless = not self.settings.endless
+        self.settings.last_stand = False
         self.show_game_modes = False
 
+    def handle_normal_button(self):
+        """Turn all game modes off, play the normal game"""
+        self.settings.endless = False
+        self.settings.last_stand = False
+        self.show_game_modes = False
+
+
+    def handle_last_stand_button(self):
+        """Toggle the last stand game mode and hide game mode buttons"""
+        self.settings.last_stand = not self.settings.last_stand
+        self.settings.endless = False
+        self.show_game_modes = False
 
     def handle_difficulty_button(self, speedup_scale):
         """Set the game difficulty (speed-up scale)"""
@@ -1183,6 +1231,8 @@ class AlienOnslaught:
 
             if self.show_game_modes:
                 self.endless_button.draw_button()
+                self.normal_button.draw_button()
+                self.last_stand_button.draw_button()
 
         pygame.display.flip()
 
@@ -1217,7 +1267,7 @@ class SingleplayerAlienOnslaught(AlienOnslaught):
                 self._check_for_resize()
 
                 if self.stats.game_active:
-                    self.endless_game()
+                    self.game_mode()
                     self._handle_level_tasks()
                     self._create_power_ups()
                     self._update_power_ups()
@@ -1431,6 +1481,8 @@ class SingleplayerAlienOnslaught(AlienOnslaught):
 
             if self.show_game_modes:
                 self.endless_button.draw_button()
+                self.normal_button.draw_button()
+                self.last_stand_button.draw_button()
 
 
         pygame.display.flip()

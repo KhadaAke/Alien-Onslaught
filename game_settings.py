@@ -22,6 +22,7 @@ class Settings:
         self.pause = pygame.image.load('images/other/pause.png')
         self.fire_sound = pygame.mixer.Sound('sounds/fire.wav')
         self.endless = False
+        self.last_stand = False
 
         # Ships settings
         self.max_hp = 5

@@ -73,7 +73,9 @@ class ScoreBoard:
     def prep_level(self):
         """Turn the level into a rendered image."""
         if self.settings.endless:
-            level_str =  "Endless Game Mode"
+            level_str =  "Endless Onslaught"
+        elif self.settings.last_stand:
+            level_str = "Last Stand level " + str(self.stats.level)
         else:
             level_str = "Level " + str(self.stats.level)
         self.level_image = self.font.render(level_str, True, self.level_color, None)
